@@ -1,6 +1,6 @@
 <template>
     <b-card bg-variant="light" class="connection">
-        <b-btn :variant="connectionData.variant" v-b-toggle.statuscollapse v-if="connectionData.connected == false"> 
+        <b-btn :variant="connectionData.variant" v-b-toggle.statuscollapse> 
             {{ connectionData.status }}
         </b-btn>
             <b-collapse id="statuscollapse">

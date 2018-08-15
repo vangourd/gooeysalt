@@ -1,7 +1,5 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import VueX from 'vuex'
-import VuexPersistedState from 'vuex-persist'
 import App from './App.vue'
 import BootstrapVue from 'bootstrap-vue'
 import Dashboard from './components/Dashboard.vue'
