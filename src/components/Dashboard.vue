@@ -17,6 +17,10 @@ import StatusBar from './StatusBar.vue'
                 sharedState: this.$root.sharedState
             }
         },
+        created() { 
+            console.debug('Dashboard component created')
+            this.$root.sharedState.initAuth()
+        }
     };
 </script>
 

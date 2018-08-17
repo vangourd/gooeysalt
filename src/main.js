@@ -20,6 +20,7 @@ const router = new VueRouter({
 // STATE Object
 
 var store = {
+  debug: 'debug',
   state: {
     auth: {
       'status': false,
@@ -43,7 +44,8 @@ var store = {
     this.state.auth.status = true
     this.state.auth.token = token
     this.state.auth.username = username
-    this.state.auth.expire = expire
+    // Transforming expiration parameter
+    this.state.auth.expire = (expire * 1000).toString().slice(0,13)
     this.state.auth.perms = perms
     this.state.auth.message = "Connected to " + this.state.auth.server +
                                   ' as ' + this.state.auth.username
@@ -51,11 +53,20 @@ var store = {
     localStorage.setItem('auth', JSON.stringify(this.state.auth))
   },
   initAuth: function() {
-    let startupstate = JSON.parse(localStorage.getItem('state'))
-    if (startupstate.auth.expire > Date.now() ){
-      this.state.auth = startupstate
+    // Loading state from local storage for persistence
+    if (localStorage.getItem('auth')){
+      let startupstate = JSON.parse(localStorage.getItem('auth'))
+      // Debug log state returning from local storage
+      console.debug(startupstate)
+      // Test for token expiration
+      if (Date.now() < startupstate.expire){
+        console.log('Token expiration pass')
+        this.state.auth = startupstate
+      }
     }
-    // Else populate state
+    else {
+      console.debug('No local state stored')
+    }
   }
 }
 

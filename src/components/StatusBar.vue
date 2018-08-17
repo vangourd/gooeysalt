@@ -48,12 +48,12 @@ import axios from 'axios'
                 })
                 .catch((error) => {
                     this.connection_test.variant = 'danger'
-                    console.log(error)
+                    console.error(error)
                 })
 
             },
             saltApiLogin: function() {
-                console.log('Pre api call')
+                console.debug('Logging into: ' + this.state.auth.server + this.state.auth.port)
                 axios.post('https://' + this.state.auth.server + 
                             ':' + this.state.auth.port + '/login', {
                     username: this.state.auth.username,
@@ -61,7 +61,7 @@ import axios from 'axios'
                     eauth: this.state.auth.eauth
                 })
                 .then((response) => {
-                    console.log("response received")
+                    console.debug("response received")
                     this.response = response.data.return[0]
                     this.$root.sharedState.setAuth(
                     this.response.token,
@@ -71,7 +71,7 @@ import axios from 'axios'
                     )
                 })
                 .catch(error => {
-                    console.log(error)
+                    console.error(error)
                 });
             }
         },
@@ -87,9 +87,8 @@ import axios from 'axios'
                     ping: true,
                 },
                 response: null,
-                status_bar_varinat: null,
                 password: null,
-                state: this.$root.sharedState.state
+                state: this.$root.sharedState.state,
             }
         },
     };
