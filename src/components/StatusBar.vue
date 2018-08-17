@@ -1,14 +1,28 @@
 <template>
     <b-card bg-variant="light" class="connection">
-        <b-btn :variant="connectionData.variant" v-b-toggle.statuscollapse> 
-            {{ connectionData.status }}
+        <b-btn :variant="state.auth.variant" v-b-toggle.statuscollapse>
+            {{ state.auth.message }}
         </b-btn>
             <b-collapse id="statuscollapse">
                 <b-form-group>
-                    <b-form-input @change="checkConnection" :state="testserver" v-model="connectionData.address" placeholder="Server Address"></b-form-input>
-                    <b-form-input v-model="connectionData.username" placeholder="Username"></b-form-input>
-                    <b-form-input type="password" v-model="connectionData.password" placeholder="Password"></b-form-input>
-                    <b-form-select v-model="connectionData.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
+                     <b-input-group>
+                        <b-input-group-text slot="prepend">
+                            <strong>https://</strong>
+                        </b-input-group-text>
+                        <b-form-input
+                             v-model="state.auth.server" 
+                            placeholder="Address" >
+                        </b-form-input>
+                        <b-form-input v-model="state.auth.port" 
+                            placeholder="Port" >
+                        </b-form-input>
+                         <b-btn @click="checkConnection" :variant="connection_test.variant" slot="append">
+                            <strong>Test</strong>
+                        </b-btn>
+                    </b-input-group>
+                    <b-form-input v-model="state.auth.username" placeholder="Username"></b-form-input>
+                    <b-form-input type="password" v-model="password" placeholder="Password"></b-form-input>
+                    <b-form-select v-model="state.auth.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
                     <b-btn @click="saltApiLogin">Connect</b-btn>
                 </b-form-group>
             </b-collapse>
@@ -19,43 +33,45 @@ import axios from 'axios'
 
     export default {
         name: 'StatusBar',
-        props: ['connectionData'],
         methods: {
             checkConnection: function() {
-                axios.get('https://' + this.connectionData.address + '/login')
+                axios.get('https://' + this.state.auth.server + 
+                            ':' + this.state.auth.port + '/login')
                 .then((response) => {
                     this.response = response;
                     if(this.response.status == 200){
-                        this.testserver = true
+                        this.connection_test.variant = 'success'
                     }
                     else{
-                        this.status = false
+                        this.connection_test.variant = 'danger' 
                     }
                 })
                 .catch((error) => {
-                    this.testserver = false
+                    this.connection_test.variant = 'danger'
                     console.log(error)
                 })
 
             },
             saltApiLogin: function() {
-                axios.post('https://' + this.connectionData.address + '/login', {
-                    username: this.connectionData.username,
-                    password: this.connectionData.password,
-                    eauth: this.connectionData.eauth
+                console.log('Pre api call')
+                axios.post('https://' + this.state.auth.server + 
+                            ':' + this.state.auth.port + '/login', {
+                    username: this.state.auth.username,
+                    password: this.password,
+                    eauth: this.state.auth.eauth
                 })
                 .then((response) => {
-                    this.connectionData.status = "Connected to " +
-                                                this.connectionData.address +
-                                                " as user " + this.connectionData.username
-                    this.connectionData.variant = 'success'
-                    this.connectionData.token = response.data.return[0].token
-                    this.connectionData.username = response.data.return[0].user
-                    this.connectionData.expire = response.data.return[0].expire
-                    this.connectionData.perms = response.data.return[0].perms
+                    console.log("response received")
+                    this.response = response.data.return[0]
+                    this.$root.sharedState.setAuth(
+                    this.response.token,
+                    this.response.user,
+                    this.response.expire,
+                    this.response.perms
+                    )
                 })
                 .catch(error => {
-                    console.log(error.response)
+                    console.log(error)
                 });
             }
         },
@@ -66,13 +82,22 @@ import axios from 'axios'
                     { value: 'pam', text: 'Pam'},
                     { value: 'ldap', text: 'Active directory'}
                 ],
-                testserver: null,
-                response: null
+                connection_test: {
+                    variant: 'secondary',
+                    ping: true,
+                },
+                response: null,
+                status_bar_varinat: null,
+                password: null,
+                state: this.$root.sharedState.state
             }
         },
     };
 </script>
 
 <style scoped>
+    .input-group, input {
+        margin-bottom:20px
+    }
    
 </style>

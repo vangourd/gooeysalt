@@ -3,5 +3,10 @@
 </template>
 
 <script>
-export default { name: 'app'}
+export default { 
+  name: 'app',
+  data: {
+    sharedState: this.sharedState
+  }
+}
 </script>

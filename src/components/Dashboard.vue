@@ -1,6 +1,6 @@
 <template>
     <div class="dashboard">
-        <statusbar :connectionData="connectionData"></statusbar>
+        <statusbar></statusbar>
     </div>
 </template>
 
@@ -14,17 +14,7 @@ import StatusBar from './StatusBar.vue'
         },
         data() {
             return {
-                connectionData: {
-                    status: 'Connect to salt server',
-                    variant: 'secondary',
-                    address: null,
-                    username: null,
-                    password: null,
-                    eauth: 'auto',
-                    token: null,
-                    perms: null,
-                    expire: null,
-                }
+                sharedState: this.$root.sharedState
             }
         },
     };
