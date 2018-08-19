@@ -1,26 +1,34 @@
 <template>
-    <div class="dashboard">
+    <div>
         <statusbar></statusbar>
+        <b-row>
+            <joblist></joblist>
+        </b-row>
     </div>
 </template>
 
 <script>
 import StatusBar from './StatusBar.vue'
+import JobList from './JobList.vue'
 
     export default {
         name: 'dashboard',
+        props:['jobs'],
         components: {
-            'statusbar' : StatusBar
+            'statusbar' : StatusBar,
+            'joblist' : JobList
         },
         data() {
             return {
-                sharedState: this.$root.sharedState
+               state: this.$root.sharedState.state,
+               response: '',
             }
         },
         created() { 
             console.debug('Dashboard component created')
             this.$root.sharedState.initAuth()
-        }
+            
+        },
     };
 </script>
 
