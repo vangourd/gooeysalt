@@ -1,21 +1,24 @@
 <template>
     <b-col>
         <h2 class="text-center">Job List</h2>
-            <job-item v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
+            <job-item v-if="jobs" v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
             </job-item>
+            <spinner v-if="!jobs"></spinner>
     </b-col>
 </template>
 
 <script>
-import axios from 'axios';
-import JobItem from './JobItem.vue';
+import axios from 'axios'
+import JobItem from './JobItem.vue'
+import Spinner from './Spinner.vue'
 
 export default {
 
     name: 'joblist',
-    props: ['jobs'],
+    props: ['jobs', 'jid'],
     components: {
         'job-item': JobItem,
+        'spinner': Spinner
     },
     methods: {
         loadJobs: function() {
