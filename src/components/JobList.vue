@@ -1,5 +1,5 @@
 <template>
-    <b-col>
+    <b-col class="job-list">
         <h2 class="text-center">Job List</h2>
             <job-item v-if="jobs" v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
             </job-item>
@@ -50,3 +50,6 @@ export default {
 }
 
 </script>
+
+<style scoped>
+</style>
