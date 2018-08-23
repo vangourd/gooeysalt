@@ -28,7 +28,15 @@ export default {
                 axios.post('https://' + this.state.auth.server + 
                     ':' + this.state.auth.port + '/', {
                         client: "runner",
-                        fun: "jobs.active",
+                        fun: "jobs.list_jobs",
+                        start_time: (
+                            (
+                                new Date(
+                                    Date.now() - (3600 * 1000)
+                                    )
+                            ) 
+                        
+                        ).toLocaleString()
                     },{
                     headers: {
                         'x-auth-token': this.state.auth.token,

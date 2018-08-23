@@ -36,7 +36,7 @@ import axios from 'axios'
         methods: {
             checkConnection: function() {
                 axios.get('https://' + this.state.auth.server + 
-                            ':' + this.state.auth.port + '/login')
+                            ':' + this.state.auth.port + '/')
                 .then((response) => {
                     this.response = response;
                     if(this.response.status == 200){
