@@ -35,11 +35,6 @@ var store = {
       'variant': 'secondary'
     }
   },
-  isAuth: function() {
-    if (this.state.auth.status == true) {
-      return true
-    }
-  },
   setAuth: function(token,username,expire,perms){
     this.state.auth.status = true
     this.state.auth.token = token
@@ -62,6 +57,10 @@ var store = {
       if (Date.now() < startupstate.expire){
         console.log('Token expiration pass')
         this.state.auth = startupstate
+      }
+      else {
+        console.log('Token expired')
+        localStorage.clear()
       }
     }
     else {
