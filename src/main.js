@@ -33,7 +33,8 @@ var store = {
       'expire' : 0,
       'message': 'Disconnected',
       'variant': 'secondary'
-    }
+    },
+    current_view: 'jobs'
   },
   setAuth: function(token,username,expire,perms){
     this.state.auth.status = true

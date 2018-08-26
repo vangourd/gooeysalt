@@ -3,29 +3,34 @@
         <b-btn :variant="state.auth.variant" v-b-toggle.statuscollapse>
             {{ state.auth.message }}
         </b-btn>
-            <b-collapse id="statuscollapse">
-                <b-form-group>
-                     <b-input-group>
-                        <b-input-group-text slot="prepend">
-                            <strong>https://</strong>
-                        </b-input-group-text>
-                        <b-form-input
-                             v-model="state.auth.server" 
-                            placeholder="Address" >
-                        </b-form-input>
-                        <b-form-input v-model="state.auth.port" 
-                            placeholder="Port" >
-                        </b-form-input>
-                         <b-btn @click="checkConnection" :variant="connection_test.variant" slot="append">
-                            <strong>Test</strong>
-                        </b-btn>
-                    </b-input-group>
-                    <b-form-input v-model="state.auth.username" placeholder="Username"></b-form-input>
-                    <b-form-input type="password" v-model="password" placeholder="Password"></b-form-input>
-                    <b-form-select v-model="state.auth.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
-                    <b-btn @click="saltApiLogin">Connect</b-btn>
-                </b-form-group>
-            </b-collapse>
+        <b-collapse id="statuscollapse">
+            <b-form-group>
+                    <b-input-group>
+                    <b-input-group-text slot="prepend">
+                        <strong>https://</strong>
+                    </b-input-group-text>
+                    <b-form-input
+                            v-model="state.auth.server" 
+                        placeholder="Address" >
+                    </b-form-input>
+                    <b-form-input v-model="state.auth.port" 
+                        placeholder="Port" >
+                    </b-form-input>
+                        <b-btn @click="checkConnection" :variant="connection_test.variant" slot="append">
+                        <strong>Test</strong>
+                    </b-btn>
+                </b-input-group>
+                <b-form-input v-model="state.auth.username" placeholder="Username"></b-form-input>
+                <b-form-input type="password" v-model="password" placeholder="Password"></b-form-input>
+                <b-form-select v-model="state.auth.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
+                <b-btn @click="saltApiLogin">Connect</b-btn>
+            </b-form-group>
+        </b-collapse>
+        <!--TODO: Hide this when disconnected-->
+        <!-- TODO: Populate this with a regular query and on startup -->
+        <b-badge>Last Highstate: {{ (new Date()).toGMTString() }}</b-badge>
+        <b-badge>Coverage: 87%</b-badge>
+        <b-badge>State Failures: 12</b-badge>
     </b-card>
 </template>
 <script>

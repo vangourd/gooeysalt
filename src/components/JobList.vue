@@ -1,9 +1,9 @@
 <template>
     <b-col id="joblist">
         <h2>Recent Jobs <span class="text-secondary">{{Object.keys(jobs).length}}</span></h2>
-            <job-item v-if="jobs" v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
-            </job-item>
-            <spinner v-if="!jobs"></spinner>
+        <job-item v-if="jobs" v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
+        </job-item>
+        <spinner v-if="!jobs"></spinner>
     </b-col>
 </template>
 
@@ -78,10 +78,7 @@ export default {
             state: this.$root.sharedState.state,
             timer: '',
             jid: null,
-            jobs: null,
-            requestHeaders: '',
-            requestData: '',
-            requestURL: '',
+            jobs: false,
         }
     },
     created() {
@@ -98,8 +95,5 @@ export default {
 
 <style scoped>
 /* Style page content - use this if you want to push the page content to the right when you open the side navigation */
-#joblist {
-    transition: margin-left .5s;
-    padding: 20px;
-}
+
 </style>
