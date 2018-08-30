@@ -32,6 +32,7 @@ var store = {
       'username': null,
       'expire' : 0,
       'message': 'Disconnected',
+      'short_message': 'Disconnected',
       'variant': 'secondary'
     },
     current_view: 'jobs'
@@ -46,7 +47,19 @@ var store = {
     this.state.auth.message = "Connected to " + this.state.auth.server +
                                   ' as ' + this.state.auth.username
     this.state.auth.variant = 'success'
+    this.state.auth.short_message = "Connected"
     localStorage.setItem('auth', JSON.stringify(this.state.auth))
+  },
+  clearAuth: function() {
+    this.state.auth.status = false,
+    this.state.auth.token = null,
+    this.state.auth.username = null,
+    this.state.expire = null,
+    this.state.auth.perms = null,
+    this.state.auth.message = "Disconnected",
+    this.state.auth.variant = 'secondary',
+    this.state.auth.short_message = "Disconnected"
+    localStorage.clear()
   },
   initAuth: function() {
     // Loading state from local storage for persistence

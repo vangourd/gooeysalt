@@ -1,9 +1,12 @@
 <template>
-    <b-card bg-variant="light" class="connection">
-        <b-btn :variant="state.auth.variant" v-b-toggle.statuscollapse>
-            {{ state.auth.message }}
+<div>
+        <b-btn :variant="state.auth.variant" v-b-modal.connectionModal>
+            {{ state.auth.short_message }}
         </b-btn>
-        <b-collapse id="statuscollapse">
+        <b-modal id="connectionModal">
+            <b-badge :variant="state.auth.variant">
+                 {{ state.auth.message }}
+            </b-badge>
             <b-form-group>
                     <b-input-group>
                     <b-input-group-text slot="prepend">
@@ -23,15 +26,15 @@
                 <b-form-input v-model="state.auth.username" placeholder="Username"></b-form-input>
                 <b-form-input type="password" v-model="password" placeholder="Password"></b-form-input>
                 <b-form-select v-model="state.auth.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
-                <b-btn @click="saltApiLogin">Connect</b-btn>
+                <b-btn @click="saltApiLogin" :variant="connectButton.variant">{{ connectButton.text }}</b-btn>
             </b-form-group>
+        </b-modal>
+        <b-collapse id="statuscollapse">
+            
         </b-collapse>
         <!--TODO: Hide this when disconnected-->
         <!-- TODO: Populate this with a regular query and on startup -->
-        <b-badge>Last Highstate: {{ (new Date()).toGMTString() }}</b-badge>
-        <b-badge>Coverage: 87%</b-badge>
-        <b-badge>State Failures: 12</b-badge>
-    </b-card>
+</div>
 </template>
 <script>
 import axios from 'axios'
@@ -58,26 +61,56 @@ import axios from 'axios'
 
             },
             saltApiLogin: function() {
-                console.debug('Logging into: ' + this.state.auth.server + this.state.auth.port)
-                axios.post('https://' + this.state.auth.server + 
-                            ':' + this.state.auth.port + '/login', {
-                    username: this.state.auth.username,
-                    password: this.password,
-                    eauth: this.state.auth.eauth
-                })
-                .then((response) => {
-                    console.debug("response received")
-                    this.response = response.data.return[0]
-                    this.$root.sharedState.setAuth(
-                    this.response.token,
-                    this.response.user,
-                    this.response.expire,
-                    this.response.perms
-                    )
-                })
-                .catch(error => {
-                    console.error(error)
-                });
+                // If connected then disconnect
+                if(this.state.auth.status == true) {
+                    console.debug('Logging out ' + this.state.auth.username)
+                    axios.post('https://' + this.state.auth.server + 
+                                 ':' + this.state.auth.port + '/logout', {},{
+                        headers: {
+                            'x-auth-token': this.state.auth.token,
+                            'content-type': 'application/json',
+                            'accept': 'application/json'
+                        }
+                    })
+                      .then((response) => {
+                          if(response.status == 200) {
+                              console.debug('Log out confirmed')
+                              this.$root.sharedState.clearAuth()
+                              this.password = null
+                          }
+                      } )
+                      .catch((error) => {
+                        if(error.response.status == '401'){
+                            console.debug('User not authorized to logout')
+                            this.$root.sharedState.clearAuth()
+                            this.password = null
+                        }
+                        console.error(error)
+                     })
+                 }
+                // If disconnected then connect
+                if(this.state.auth.status == false) {
+                    console.debug('Logging into: ' + this.state.auth.server + this.state.auth.port)
+                    axios.post('https://' + this.state.auth.server + 
+                                ':' + this.state.auth.port + '/login', {
+                        username: this.state.auth.username,
+                        password: this.password,
+                        eauth: this.state.auth.eauth
+                    })
+                    .then((response) => {
+                        console.debug("response received")
+                        this.response = response.data.return[0]
+                        this.$root.sharedState.setAuth(
+                        this.response.token,
+                        this.response.user,
+                        this.response.expire,
+                        this.response.perms
+                        )
+                    })
+                    .catch(error => {
+                        console.error(error)
+                    });
+                }
             }
         },
         data() {
@@ -96,6 +129,16 @@ import axios from 'axios'
                 state: this.$root.sharedState.state,
             }
         },
+        computed: {
+            connectButton: function() {
+                if(this.state.auth.status == true){
+                    return {'variant':'dark','text':'Disconnect'}
+                }
+                else {
+                    return {'variant':'primary','text':'Connect'}
+                }
+            }
+        }
     };
 </script>
 

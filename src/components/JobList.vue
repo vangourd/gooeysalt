@@ -1,5 +1,19 @@
 <template>
     <b-col id="joblist">
+    <b-navbar toggleable="sm" type="dark" variant="dark">
+        <b-navbar-toggle target="jobs_collapse"></b-navbar-toggle>
+        <b-navbar-brand class="fa fa-wrench"> Jobs</b-navbar-brand>
+        <b-collapse is-nav id="jobs_collapse">
+        <b-navbar-nav>
+            <b-nav-text> Sort by:</b-nav-text>
+            <b-nav-item><i class="fa fa-sort-alpha-up"></i> Function</b-nav-item>
+            <b-nav-item><i class="fa fa-clock"></i> Start Time</b-nav-item>
+            <b-nav-item><i class="fa fa-check"></i> Success</b-nav-item>
+            <b-nav-item><i class="fa fa-bullseye"></i> Targets</b-nav-item>
+            <b-nav-item><i class="fa fa-undo"></i> Return</b-nav-item>
+        </b-navbar-nav>
+        </b-collapse>
+    </b-navbar>
         <h2>Recent Jobs <span class="text-secondary">{{Object.keys(jobs).length}}</span></h2>
         <job-item v-if="jobs" v-for="(job, index) in jobs" :job="job" :jid="jobs[index]" :key="index">
         </job-item>
@@ -22,33 +36,33 @@ export default {
     },
     methods: {
         loadJobs: function() {
-                if(this.state.auth.status == true){ 
-                console.debug("Server" + this.state.auth.server)
-                console.debug("Port" + this.state.auth.port)
-                axios.post('https://' + this.state.auth.server + 
-                    ':' + this.state.auth.port + '/', {
-                        client: "runner",
-                        fun: "jobs.list_jobs",
-                        start_time: (
-                            (
-                                new Date(
-                                    Date.now() - (3600 * 1000)
-                                    )
-                            ) 
+                // if(this.state.auth.status == true){ 
+                // console.debug("Server" + this.state.auth.server)
+                // console.debug("Port" + this.state.auth.port)
+                // axios.post('https://' + this.state.auth.server + 
+                //     ':' + this.state.auth.port + '/', {
+                //         client: "runner",
+                //         fun: "jobs.list_jobs",
+                //         start_time: (
+                //             (
+                //                 new Date(
+                //                     Date.now() - (3600 * 1000)
+                //                     )
+                //             ) 
                         
-                        ).toLocaleString()
-                    },{
-                    headers: {
-                        'x-auth-token': this.state.auth.token,
-                        'content-type': 'application/json',
-                        'accept': 'application/json'
-                    }
-                          })
-                     .then((response) => this.jobs = response.data.return[0] )
-                     .catch((error) => {
-                        console.error(error)
-                    })
-                }
+                //         ).toLocaleString()
+                //     },{
+                //     headers: {
+                //         'x-auth-token': this.state.auth.token,
+                //         'content-type': 'application/json',
+                //         'accept': 'application/json'
+                //     }
+                //           })
+                //      .then((response) => this.jobs = response.data.return[0] )
+                //      .catch((error) => {
+                //         console.error(error)
+                //     })
+                // }
 
                     // NOT WORKING
                     // this.requestURL = ('https://' + this.state.auth.server + 

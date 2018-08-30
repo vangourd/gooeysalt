@@ -1,20 +1,32 @@
 <template>
     <nav :class="{styleNavOpen: navopen, styleNavClose: !navopen}" id="menu">
         <i @click="toggleNav" class="fa text-center" :class="{'fa-arrow-circle-right': !navopen,'fa-arrow-circle-left': navopen}" id="navBtn"></i>
-        <div id="viewselection"  v-if="!navopen">
-           <div class="rotate-text">
-               <strong >ActionBar</strong>
+        <statusbar v-if="navopen"></statusbar>
+        <div id="viewselection">
+           <div class="rotate-text" :class="{'rotate-text-open': !navopen}">
+               <strong >GooeySalt</strong>
            </div>
-           <b-btn @click="changeView('minions') " class="fa fa-cubes" variant="light"></b-btn>
-           <b-btn @click="changeView('jobs')" class="fa fa-wrench" variant="light"></b-btn>
-           <b-btn @click="changeView('reports')" class="fa fa-chart-line" variant="light"></b-btn> 
-           <b-btn @click="changeView('cli')" class="fa fa-terminal" variant="light"></b-btn>
+           <b-btn @click="changeView('minions') " class="fa fa-cubes" variant="light" v-bind:block="navopen">
+               <span v-if="navopen"> Minions</span>
+            </b-btn>
+           <b-btn @click="changeView('jobs')" class="fa fa-tasks" variant="light" v-bind:block="navopen">
+                <span v-if="navopen"> Jobs</span>
+           </b-btn>
+           <b-btn class="fa fa-edit" variant="light" v-bind:block="navopen">
+                <span v-if="navopen"> States</span>
+           </b-btn> 
+           <b-btn @click="changeView('reports')" class="fa fa-glasses" variant="light" v-bind:block="navopen">
+                <span v-if="navopen"> Reports</span>
+           </b-btn> 
+           <b-btn @click="changeView('cli')" class="fa fa-terminal" variant="light" v-bind:block="navopen">
+                <span v-if="navopen"> Terminal</span>
+           </b-btn>
         </div>
-        <div id="filters" v-if="navopen">
+        <!-- <div id="filters" v-if="navopen">
             <span>Search</span> 
             <b-form-input v-model="selection"></b-form-input>
             <b-card v-if="selection">
-                    <!-- Filters -->
+                    Filters
                     <strong>Add a filter</strong>
                     <div class="search-result">
                         <i class="fa fa-desktop"></i>
@@ -46,16 +58,20 @@
                         <p href="#"><i class="fa fa-tag"></i> {{ selection }} <i style="color:red" class="fa fa-times-circle"></i></p> 
                 </div>
             </b-card>
-        </div>
+        </div> -->
         
     </nav>
 </template>
 
 <script>
 import slideout from 'slideout'
+import StatusBar from './StatusBar.vue'
 
 export default {
     name: 'actionbar',
+    components: {
+        'statusbar': StatusBar
+    },
     methods: {
       toggleNav: function(){
         this.navopen = !this.navopen
@@ -94,6 +110,9 @@ export default {
 }
 
 .rotate-text{
+    color:white;
+}
+.rotate-text-open{
     margin-top:20px;
     transform: rotate(90deg);
     margin-bottom:60px;
@@ -110,7 +129,7 @@ export default {
 }
 
 .styleNavOpen {
-    width: 250px;
+    width: 150px;
 }
 
 .styleNavOpen div {
@@ -135,10 +154,6 @@ export default {
 
 #navBtn:hover {
     color: darkgray;
-}
-
-.rotate-text {
-    color:white;
 }
 
 .search-result:hover {

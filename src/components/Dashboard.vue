@@ -3,7 +3,6 @@
         <actionbar></actionbar>
         
         <div id="workarea">
-            <statusbar></statusbar>
             <b-row>
                 <joblist v-if="state.current_view === 'jobs' "></joblist>
                 <minionlist v-if="state.current_view === 'minions' "></minionlist>
@@ -26,7 +25,6 @@ import Cli from './Cli.vue'
         name: 'dashboard',
         props:['jobs'],
         components: {
-            'statusbar' : StatusBar,
             'joblist' : JobList,
             'minionlist': MinionList,
             'cli': Cli,
@@ -51,7 +49,7 @@ import Cli from './Cli.vue'
 #workarea {
     overflow: hidden;
     transition: margin-left .5s;
-    margin-left: 60px;
+    margin-left: 50px;
 }
 
 </style>     
