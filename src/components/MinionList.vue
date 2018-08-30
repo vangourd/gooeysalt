@@ -12,6 +12,7 @@
             <b-nav-item><i class="fab fa-windows"></i> OS</b-nav-item>
             <b-nav-text> Actions:</b-nav-text>
             <b-nav-item right><i class="fa fa-plus"> New Minion</i></b-nav-item>
+            <b-nav-item @click="loadMinions" right><i class="fa fa-sync-alt"> Refresh</i></b-nav-item>
         </b-navbar-nav>
         </b-collapse>
     </b-navbar>
@@ -19,13 +20,13 @@
         <b-card v-if="value">
             <!-- Name and OS Type -->
             <span>
-                <i class="fab" :class="{ 'fa-windows large' : (value.kernel == 'Windows') }"></i>
-                <i class="fab" :class="{ 'fa-linux large' : (value.kernel == 'Linux') }"></i>
-                <strong>{{value.host}}</strong>
+                <i class="fab" :class="{ 'fa-windows large' : (value.return.kernel == 'Windows') }"></i>
+                <i class="fab" :class="{ 'fa-linux large' : (value.return.kernel == 'Linux') }"></i>
+                <strong>{{value.return.host}}</strong>
             </span><br>
             <!-- Properties -->
             <span>
-                <b-badge v-for="(role, index) in value.roles" :key="index">{{ role }}</b-badge>
+                <b-badge v-for="(role, index) in value.return.roles" :key="index">{{ role }}</b-badge>
             </span>
         </b-card>
         <b-card class="minioncard text-muted" v-if="!value">
@@ -33,7 +34,7 @@
             <strong>{{ key }}</strong>
         </b-card>
     </div>
-    <spinner v-if="!minions"></spinner>
+    <spinner v-if="minions.length == 0"></spinner>
 </b-col>
 
 </template>
@@ -56,8 +57,8 @@ export default {
                     ':' + this.state.auth.port + '/', {
                         client: "runner",
                         fun: "jobs.last_run",
-                        function: "grains.items",
-                        "target-type": "list",
+                        function: "grains.items"
+                        //"target-type": "list",
                     },{
                         headers: {
                             'x-auth-token': this.state.auth.token,
@@ -67,22 +68,33 @@ export default {
                     })
                     .then((response) => {
                         // Once API call received
-                        if(response) {
+                        // TODO: Figure out a way to catch Salt Errors when no jobs are found
+                        try {
+                            var query = response['data']['return'][0]
+                            query = query[Object.keys(query)[0]]
+                            //this.minions = response
                             let now = new Date()
-                            for (jid in response['return'][0]) {
-                                let then = new Date(response['return'][0][jid].StartTime)
-                                // Get the difference of the two times
-                                difference = now - then
-                                // Convert milliseconds to seconds
-                                difference = difference / 1000
-                                // Convert seconds to minutes
-                                difference = difference / 60
-                                // Convert minutes to hours
-                                difference = difference / 60
-                                if(difference < 8){
-                                    this.minions = response['return'[0][jid]['result']]
+                            let then = new Date(query.StartTime)
+                            // Get the difference of the two times
+                            let difference = now - then
+                            // Convert milliseconds to seconds
+                            difference = difference / 1000
+                            // Convert seconds to minutes
+                            difference = difference / 60
+                            // Convert minutes to hours
+                            difference = difference / 60
+                            if(difference < 8){
+                                this.minions = []
+                                for (var key in query.Result) {
+                                    query.Result[key].name = key
+                                    this.minions.push(query.Result[key])
                                 }
+                                console.debug('loading minion data from recent job')
+                                console.debug(difference)
                             }
+                        }
+                        catch(err) {
+                            console.error(err)
                         }
                         
                     } )
@@ -117,6 +129,32 @@ export default {
                 //     })
                 // }
             },
+        startGrainsItems: function() {
+            console.debug('launching startGrainsItems')
+             if(this.state.auth.status == true){ 
+                axios.post('https://' + this.state.auth.server + 
+                    ':' + this.state.auth.port + '/', {
+                        client: "local",
+                        tgt: "*",
+                        fun: "grains.items"
+                    },{
+                    headers: {
+                        'x-auth-token': this.state.auth.token,
+                        'content-type': 'application/json',
+                        'accept': 'application/json'
+                    }
+                          })
+                     .then((response) => {
+                         if (response.status == 200) {
+                            return true
+                         }
+                            return false
+                         } )
+                     .catch((error) => {
+                        console.error(error)
+                    })
+                }
+        },
         initView: function() {
             console.debug('initView started')
             if(localStorage.getItem('minions')){
@@ -128,7 +166,7 @@ export default {
     data() {
         return {
            state: this.$root.sharedState.state,
-           minions: null,
+           minions: [],
            jid: null,
         }
     },
@@ -139,3 +177,7 @@ export default {
     }
 }
 </script>
+
+<style>
+
+</style>
