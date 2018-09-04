@@ -30,7 +30,7 @@
             </b-nav-item>
             <b-nav-item-dropdown right text="Actions">
                 <b-dropdown-item right><i class="fa fa-plus"> New Minion</i></b-dropdown-item>
-                <b-dropdown-item @click="loadMinions" right>
+                <b-dropdown-item @click="refreshGrains" right>
                     <i class="fa fa-sync-alt"> Refresh</i>
                 </b-dropdown-item>
             </b-nav-item-dropdown>
@@ -89,14 +89,8 @@ export default {
                     })
                     .then((response) => {
                         // Once API call received
-                        // TODO: Figureo out a way to catch Salt Errors when no jobs are found
-                        this.testdata = response
-                        if(response['data']['return'][0] == false) {
-                            this.startGrainsItems()
-                            return
-                        }
+                        // TODO: Figure out a way to catch Salt Errors when no jobs are found
                          try {
-                            this.minions = []
                             var query = response['data']['return'][0]
                             query = query[Object.keys(query)[0]]
                             this.testdata = query
@@ -112,6 +106,7 @@ export default {
                             // Convert minutes to hours
                             difference = difference / 60
                             if(difference < 8){
+                                this.minions = []
                                 for (var key in query.Minions){
                                     name = query.Minions[key]
                                     // If the minion isn't included in the return data
@@ -126,6 +121,10 @@ export default {
                                 console.debug('loaded minion data from recent job')
                                 localStorage.setItem('minions', JSON.stringify(this.minions))
                                 console.debug(difference)
+                                return true
+                            }
+                            else {
+                                return false
                             }
                         }
                         catch(err) {
@@ -139,39 +138,46 @@ export default {
             },
         startGrainsItems: function() {
             // If timer limit is counting down don't fire
-            if(!this.retrytimer == 0){ return }
+            if(this.state.auth.status == false){return false; console.log('Not connected to API') }
+            if(this.retrytimer > 0){ return false; console.debug("timer restriction on api call")}
             console.debug('launching startGrainsItems')
-            setInterval( apitimer => {this.retrytimer -= 1 },1000)
-            if(this.state.auth.status == true){ 
-                axios.post('https://' + this.state.auth.server + 
-                    ':' + this.state.auth.port + '/', {
-                        client: "local",
-                        tgt: "*",
-                        fun: "grains.items"
-                    },{
-                    headers: {
-                        'x-auth-token': this.state.auth.token,
-                        'content-type': 'application/json',
-                        'accept': 'application/json'
-                    }
-                        })
-                    .then((response) => {
-                        if (response.status == 200) {
-                            return true
-                        }
-                            return false
-                        } )
-                    .catch((error) => {
-                        console.error(error)
+            this.retryinterval = setInterval(function(){
+                if (this.retrytimer == 0){clearInterval(this.retryinterval);this.retrytimer = 90}
+                this.retrytimer = this.retrytimer - 1 
+                },1000)
+            axios.post('https://' + this.state.auth.server + 
+                ':' + this.state.auth.port + '/', {
+                    client: "local",
+                    tgt: "*",
+                    fun: "grains.items"
+                },{
+                headers: {
+                    'x-auth-token': this.state.auth.token,
+                    'content-type': 'application/json',
+                    'accept': 'application/json'
+                }
                     })
-            }
+                .then((response) => {
+                    if (response.status == 200) {
+                        return true
+                    } 
+                    else {
+                        return false
+                    } 
+                    })
+                .catch((error) => {
+                    console.error(error)
+                    return false
+                })
         },
         initView: function() {
             console.debug('initView started')
             if(localStorage.getItem('minions')){
                 console.debug('loading local storage')
                 this.minions = JSON.parse(localStorage.getItem('minions'))
+                return true
             }
+            else { return false }
         },
         toggleSort: function(selection) {
             if (selection == 'alpha') { 
@@ -192,6 +198,12 @@ export default {
                     this.sort = 'osSortUp'
                 }
             }
+        },
+        refreshGrains: function() {
+            this.minions = []
+            if(this.startGrainsItems()){
+                this.loadMinions()
+            }
         }
     },
     data() {
@@ -200,13 +212,14 @@ export default {
            minions: [],
            sort: 'alphaSortDown',
            jid: null,
-           retrytimer: null,
+           retrytimer: 0,
+           retryinterval: null,
+           loadtimer: null,
         }
     },
     created() {
-        this.initView()
-        this.loadMinions()
-        this.timer = setInterval(this.loadMinions, 600000)
+        if (!this.initView()){this.loadMinions()}
+        this.loadtimer = setInterval(this.loadMinions(), 600000)
     },
     computed: {
         minionSorted: function() {
