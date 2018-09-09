@@ -72,7 +72,7 @@ export default {
     methods: {
         loadMinions: function() {
                 // Look for job type in last hour
-                if(this.state.auth.status == false){return "Not connected to API" }
+                if(this.state.auth.status == false){console.log("Not connected to API"); return false}
                 // API Call
                 axios.post('https://' + this.state.auth.server + 
                     ':' + this.state.auth.port + '/', {
@@ -88,63 +88,64 @@ export default {
                         }
                     })
                     .then((response) => {
+                        if (response['data']['return'] == undefined){console.debug("No recent jobs");return false}
                         // Once API call received
                         // TODO: Figure out a way to catch Salt Errors when no jobs are found
-                         try {
-                            var query = response['data']['return'][0]
-                            query = query[Object.keys(query)[0]]
-                            this.testdata = query
-                            //this.minions = response
-                            let now = new Date()
-                            let then = new Date(query.StartTime)
-                            // Get the difference of the two times
-                            let difference = now - then
-                            // Convert milliseconds to seconds
-                            difference = difference / 1000
-                            // Convert seconds to minutes
-                            difference = difference / 60
-                            // Convert minutes to hours
-                            difference = difference / 60
-                            if(difference < 8){
-                                this.minions = []
-                                for (var key in query.Minions){
-                                    name = query.Minions[key]
-                                    // If the minion isn't included in the return data
-                                    // Push it as an non-returning minion
-                                    if (!query.Result[name]){
-                                        this.minions.push({'name' : name, properties: null})
-                                    }
+                        var query = response['data']['return'][0]
+                        query = query[Object.keys(query)[0]]
+                        //this.minions = response
+                        let now = new Date()
+                        let then = new Date(query.StartTime)
+                        // Get the difference of the two times
+                        let difference = now - then
+                        // Convert milliseconds to seconds
+                        difference = difference / 1000
+                        // Convert seconds to minutes
+                        difference = difference / 60
+                        // Convert minutes to hours
+                        difference = difference / 60
+                        if(difference < 8){
+                            this.minions = []
+                            for (var key in query.Minions){
+                                name = query.Minions[key]
+                                // If the minion isn't included in the return data
+                                // Push it as an non-returning minion
+                                if (!query.Result[name]){
+                                    this.minions.push({'name' : name, properties: null})
                                 }
-                                for (key in query.Result){
-                                    this.minions.push({'name': key, properties: query.Result[key].return})
-                                }
-                                console.debug('loaded minion data from recent job')
-                                localStorage.setItem('minions', JSON.stringify(this.minions))
-                                console.debug(difference)
-                                return true
                             }
-                            else {
-                                return false
+                            for (key in query.Result){
+                                this.minions.push({'name': key, properties: query.Result[key].return})
                             }
+                            console.debug('loaded minion data from recent job')
+                            localStorage.setItem('minions', JSON.stringify(this.minions))
+                            console.debug(difference)
+                            return true
                         }
-                        catch(err) {
-                            console.error(err)
-                        }
-                        
+                        else console.debug("Data returned too old"); return false
                     } )
                     .catch((error) => {
                         console.error(error)
+                        return false
                     })
             },
         startGrainsItems: function() {
-            // If timer limit is counting down don't fire
-            if(this.state.auth.status == false){return false; console.log('Not connected to API') }
-            if(this.retrytimer > 0){ return false; console.debug("timer restriction on api call")}
+            // If not authenticated
+            if(this.state.auth.status == false){
+                console.log('Not authenticated') 
+                return false
+                }
+            // If queried too quickly
+            var timediff = Date.now() - this.apilimit
+            console.log(timediff)
+            if( timediff < 90000 ){
+                console.log("Querying too quickly")
+                this.apilimit = this.apilimit + 10000
+                return false
+            }
+            // Blank current object model and trigger loading spinner
+            this.minions = []
             console.debug('launching startGrainsItems')
-            this.retryinterval = setInterval(function(){
-                if (this.retrytimer == 0){clearInterval(this.retryinterval);this.retrytimer = 90}
-                this.retrytimer = this.retrytimer - 1 
-                },1000)
             axios.post('https://' + this.state.auth.server + 
                 ':' + this.state.auth.port + '/', {
                     client: "local",
@@ -159,16 +160,13 @@ export default {
                     })
                 .then((response) => {
                     if (response.status == 200) {
+                        this.apilimit = Date.now() 
                         return true
                     } 
                     else {
                         return false
                     } 
                     })
-                .catch((error) => {
-                    console.error(error)
-                    return false
-                })
         },
         initView: function() {
             console.debug('initView started')
@@ -200,9 +198,8 @@ export default {
             }
         },
         refreshGrains: function() {
-            this.minions = []
-            if(this.startGrainsItems()){
-                this.loadMinions()
+            if(!this.loadMinions()){
+                this.startGrainsItems()
             }
         }
     },
@@ -211,15 +208,16 @@ export default {
            state: this.$root.sharedState.state,
            minions: [],
            sort: 'alphaSortDown',
-           jid: null,
-           retrytimer: 0,
-           retryinterval: null,
-           loadtimer: null,
+           timer: null,
+           apilimit: Date.now()
         }
     },
     created() {
         if (!this.initView()){this.loadMinions()}
-        this.loadtimer = setInterval(this.loadMinions(), 600000)
+        this.timer = setInterval(this.loadMinions(), 600000)
+    },
+    beforeDestroy() {
+        clearInterval(this.timer)
     },
     computed: {
         minionSorted: function() {
