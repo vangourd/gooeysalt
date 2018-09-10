@@ -1,8 +1,8 @@
 <template>
     <b-card class="job-card">
-        <strong>{{ job.Function }}</strong> on {{ job.Target }}
+        <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }}
         <p class="small text-secondary">
-            {{ job.StartTime }} <br>
+            {{ job.properties.StartTime }} <br>
 
         </p>
     </b-card>
