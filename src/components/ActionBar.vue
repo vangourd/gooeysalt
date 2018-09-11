@@ -22,44 +22,6 @@
                 <span v-if="navopen"> Terminal</span>
            </b-btn>
         </div>
-        <!-- <div id="filters" v-if="navopen">
-            <span>Search</span> 
-            <b-form-input v-model="selection"></b-form-input>
-            <b-card v-if="selection">
-                    Filters
-                    <strong>Add a filter</strong>
-                    <div class="search-result">
-                        <i class="fa fa-desktop"></i>
-                        <span href="#"> {{ selection }}</span>
-                    </div>
-                    <div class="search-result">
-                        <i class="fa fa-terminal"></i>
-                        <span href="#">{{ selection }}</span>
-                    </div>
-                    <div class="search-result">
-                        <i class="fa fa-undo"></i>
-                        <span href="#">{{ selection }}</span>
-                    </div>
-                    <div class="search-result">
-                        <i class="fa fa-clock"></i>
-                        <span href="#">{{ selection }}</span>
-                    </div>
-                    <div class="search-result">
-                        <i class="fa fa-tag"></i>
-                        <span href="#">{{ selection }}</span>
-                    </div>
-            </b-card>
-            <b-card>
-                <strong>Applied Filters</strong>
-                <div>
-                        
-                        <p href="#"><i class="fa fa-desktop"></i> {{ selection }}<i style="color:red" class="fa fa-times-circle"></i></p> 
-                        
-                        <p href="#"><i class="fa fa-tag"></i> {{ selection }} <i style="color:red" class="fa fa-times-circle"></i></p> 
-                </div>
-            </b-card>
-        </div> -->
-        
     </nav>
 </template>
 

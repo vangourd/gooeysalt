@@ -29,9 +29,6 @@
                 <b-btn @click="saltApiLogin" :variant="connectButton.variant">{{ connectButton.text }}</b-btn>
             </b-form-group>
         </b-modal>
-        <b-collapse id="statuscollapse">
-            
-        </b-collapse>
         <!--TODO: Hide this when disconnected-->
         <!-- TODO: Populate this with a regular query and on startup -->
 </div>

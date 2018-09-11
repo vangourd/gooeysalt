@@ -1,5 +1,5 @@
 <template>
-<b-col>
+<b-col id="minionlist">
     <b-navbar toggleable="md" type="dark" variant="dark">
         <b-navbar-toggle target="minions_collapse"></b-navbar-toggle>
         <b-navbar-brand class="fa fa-cubes"> Minions</b-navbar-brand>
@@ -283,5 +283,7 @@ export default {
 </script>
 
 <style>
-
+#minionlist {
+    padding-right:0px
+}
 </style>

@@ -1,16 +1,15 @@
 <template>
-    <div>
+    <b-container id="container" fluid>
         <actionbar></actionbar>
         
-        <div id="workarea">
-            <b-row>
+        <b-row id="workarea">
                 <joblist v-if="state.current_view === 'jobs' "></joblist>
                 <minionlist v-if="state.current_view === 'minions' "></minionlist>
                 <cli v-if="state.current_view === 'cli' "></cli>
                 <reports v-if="state.current_view === 'reports' "></reports>
-            </b-row>
-        </div>
-    </div>
+                </b-col>
+        </b-row>
+    </b-container>
 </template>
 
 <script>
@@ -49,7 +48,7 @@ import Cli from './Cli.vue'
 #workarea {
     overflow: hidden;
     transition: margin-left .5s;
-    margin-left: 50px;
+    margin-left: 20px;
 }
 
 </style>     
