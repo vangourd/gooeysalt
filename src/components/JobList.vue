@@ -44,17 +44,27 @@
                 <b-nav-form>
                     <b-form-input placeholder="Quick Add"></b-form-input>
                 </b-nav-form>
-                <b-modal id="filterModal">
-                    <strong>Applied Filters</strong>
-                    <ul>
-                        <li v-for="filter in filters">{{ filter.string }} applied on {{ filter.type }}</li>
-                    </ul>
-                </b-modal>
             </b-navbar-nav>
             <b-navbar-nav v-if="navSelection == 'Actions'">
                 <b-nav-item><i class="fa fa-undo"></i> Refresh</b-nav-item>
             </b-navbar-nav>
             </b-collapse>
+            <b-modal id="filterModal">
+                    <b-nav-form>
+                        <b-form-input placeholder="Add Filter"></b-form-input>
+                    </b-nav-form>
+                    <strong>Applied Filters</strong>
+                    <ul>
+                        <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
+                            <i class="fa" :class="{
+                                'fa-bullseye': filter.type == 'target',
+                                'fa-wrench': filter.type == 'function'
+                            }"></i>
+                            {{ filter.string }} applied on {{ filter.type }}
+                            <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)""></i>
+                        </li>
+                    </ul>
+            </b-modal>
         </b-navbar>
         <job-item v-if="jobs" v-for="job in jobsSorted" :job="job" :key="job.jid">
         </job-item>
