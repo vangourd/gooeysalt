@@ -28,31 +28,32 @@
                     <i class="fa" :class="{
                         'fa-sort-up': this.sort == 'resultSortUp',
                         'fa-sort-down': this.sort == 'resultSortDown',
-                        'fa-clock': !this.sort.includes('result')
+                        'fa-check': !this.sort.includes('result')
                     }"> Result</i>
                 </b-nav-item>
                 <b-nav-item @click="toggleSort('target')">
                     <i class="fa" :class="{
                         'fa-sort-up': this.sort == 'targetSortUp',
                         'fa-sort-down': this.sort == 'targetSortDown',
-                        'fa-clock': !this.sort.includes('target')
+                        'fa-bullseye': !this.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
             </b-navbar-nav>
+            <!-- Filter results autocomplete -->
             <b-navbar-nav v-if="navSelection == 'Filters'">
-                <b-nav-item v-b-modal.filterModal><i class="fa fa-list"></i> Show Active Filters</b-nav-item>
-                <b-nav-form>
-                    <b-form-input placeholder="Quick Add"></b-form-input>
+                <b-nav-form class="position-relative">
+                    <b-form-input autocomplete="false" v-model="searchQuery"></b-form-input>
+                    <div v-if="searchQuery" class="position-absolute" id="searchResultList">
+                        <span class="searchResultItem">No results</span>
+                    </div>
                 </b-nav-form>
+                <b-nav-item v-b-modal.filterModal><i class="fa fa-times-circle"></i> Remove </b-nav-item>
             </b-navbar-nav>
             <b-navbar-nav v-if="navSelection == 'Actions'">
                 <b-nav-item><i class="fa fa-undo"></i> Refresh</b-nav-item>
             </b-navbar-nav>
             </b-collapse>
             <b-modal id="filterModal">
-                    <b-nav-form>
-                        <b-form-input placeholder="Add Filter"></b-form-input>
-                    </b-nav-form>
                     <strong>Applied Filters</strong>
                     <ul>
                         <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
@@ -61,7 +62,7 @@
                                 'fa-wrench': filter.type == 'function'
                             }"></i>
                             {{ filter.string }} applied on {{ filter.type }}
-                            <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)""></i>
+                            <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
             </b-modal>
@@ -174,7 +175,8 @@ export default {
             jobs: [],
             sort: 'functionSortUp',
             filters: [],
-            navSelection: 'Sorts'
+            navSelection: 'Sorts',
+            searchQuery: null
         }
     },
     created() {
@@ -246,4 +248,17 @@ export default {
 #joblist {
     padding-right:0px;
 }
+#searchResultList{
+   width:100%;
+   top:40px; 
+   z-index:1;
+   background-color:white;
+   border-radius: 2px;
+   border-style: solid;
+   border-color:gray;
+}
+.searchResultItem{
+    padding:5px;
+}
+
 </style>

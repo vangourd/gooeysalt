@@ -1,16 +1,16 @@
 <template>
     <b-card class="job-card">
         <b-row>
-            <b-col>
+            <b-col cols="10">
                     <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }}
                     <p class="small text-secondary">
                         {{ job.properties.StartTime }} <br>
-                    <b-btn @click="loadJobData"
+                    <!-- <b-btn @click="loadJobData"
                         :class="showJobData ? 'collapsed' : null" 
                         v-bind:aria-controls="job.jid" 
                         :aria-expanded="showJobData ? 'true': 'false'" size="sm" variant="light">
                         Show results
-                    </b-btn>
+                    </b-btn> -->
                     <b-collapse v-model="showJobData" :id=" 'collapse' + job.jid">
                         <p v-if="!this.jobData">Loading...</p>
                         <p>
@@ -19,8 +19,10 @@
                     </b-collapse>
                     </p>
             </b-col>
-            <b-col>
-                test
+            <b-col cols="2">
+                <i class="fa fa-check">:12</i>
+                <i class="fa fa-times">:3</i>
+                <i class="fa fa-download"></i>
             </b-col>
         </b-row>
     </b-card>
