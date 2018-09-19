@@ -54,7 +54,7 @@
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
             </b-navbar-nav>
             <b-navbar-nav v-if="navSelection == 'Actions'">
-                <b-nav-item><i class="fa fa-undo"></i> Refresh</b-nav-item>
+                <b-nav-item @click="loadJobs"><i class="fa fa-undo"></i> Refresh</b-nav-item>
             </b-navbar-nav>
             </b-collapse>
             <b-modal id="filterModal">
@@ -66,7 +66,7 @@
                                 'fa-wrench': filter['type'] == 'Function',
                                 'fa-clock': filter['type'] == 'Datetime',
                             }"></i>
-                            {{ filter.string }} applied on {{ filter['type'] }}
+                            {{ filter['type'] }} with "{{ filter.string }}"
                             <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
@@ -190,7 +190,8 @@ export default {
             filters: [],
             filterMenu: {"type": "Choose filter type", "text": ""},
             navSelection: 'Sorts',
-            searchQuery: null
+            searchQuery: null,
+            testData: null,
         }
     },
     created() {
@@ -202,74 +203,87 @@ export default {
     },
     computed: {
         jobsSorted: function() {
-            /* 
-            if(this.filters){
-                for (filter in filters){
-                    if (filter.type == 'verbosity'){
 
+            var filteredjobs = []
+            console.debug('Filtered job length is ' + filteredjobs.length)
+            if(this.filters.length > 0){
+                for (var filter in this.filters){
+                    // if (filter.type == 'verbosity'){
+                    
+                    // }
+                    if (this.filters[filter].type == 'Target') {
+                        var start = this.jobs
+                        var end = []
+                        for (var job in start){
+                            if (start[job].properties.Target.includes(this.filters[filter]['string']) ){
+                                filteredjobs.push(start[job])
+                            }
+                        }
+                        //console.debug(remove)
+                        //for (var i in remove){
+                        //    console.debug('Removing ' + remove[i])
+                        //    filteredjobs.splice(remove[i],1)
+                        //}
+                        console.debug("Filtered job lenght post filter is" + filteredjobs.length)
                     }
-                    if (filter.type == 'targets'){
+                //     if (filter.type == 'starttime'){
 
-                    }
-                    if (filter.type == 'starttime'){
+                //     }
+                //     if (filter.type == 'function'){
 
-                    }
-                    if (filter.type == 'function'){
-
-                    }
-                    if (filter.type == 'result'){
+                //     }
+                //     if (filter.type == 'result'){
                         
-                    }
+                //     }
+                // }
                 }
             }
-            */            
+            else {
+                filteredjobs = this.jobs
+            }
             if (this.sort == 'functionSortUp'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.Function < b.properties.Function) return 1;
                     if(a.properties.Function > b.properties.Function) return -1;
                     return 0; 
-                }
+                    }
                 )
             }
             if (this.sort == 'functionSortDown'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.Function > b.properties.Function) return 1;
                     if(a.properties.Function < b.properties.Function) return -1;
                     return 0; 
-                }
-                )
+                    })
+                
             }
             if (this.sort == 'startSortUp'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.StartTime < b.properties.StartTime) return 1;
                     if(a.properties.StartTime > b.properties.StartTime) return -1;
                     return 0; 
-                }
-                )
+                    })
             }
             if (this.sort == 'startSortDown'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.StartTime > b.properties.StartTime) return 1;
                     if(a.properties.StartTime < b.properties.StartTime) return -1;
                     return 0; 
-                }
-                )
+                    })
             }
             if (this.sort == 'targetSortUp'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.Target < b.properties.Target) return 1;
                     if(a.properties.Target > b.properties.Target) return -1;
                     return 0; 
-                }
-                )
+                })
             }
             if (this.sort == 'targetSortDown'){
-                return this.jobs.sort(function(a,b) {
+                return filteredjobs.sort(function(a,b) {
                     if(a.properties.Target > b.properties.Target) return 1;
                     if(a.properties.Target < b.properties.Target) return -1;
                     return 0; 
-                }
-                )
+                    })
             }
             
         }
