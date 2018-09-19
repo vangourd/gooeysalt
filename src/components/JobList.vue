@@ -42,12 +42,16 @@
             <!-- Filter results autocomplete -->
             <b-navbar-nav v-if="navSelection == 'Filters'">
                 <b-nav-form class="position-relative">
-                    <b-form-input autocomplete="false" v-model="searchQuery"></b-form-input>
-                    <div v-if="searchQuery" class="position-absolute" id="searchResultList">
-                        <span class="searchResultItem">No results</span>
-                    </div>
+                    <b-dropdown :text="filterMenu['type']" variant="light">
+                    <b-dropdown-item class="fa fa-wrench" @click.stop = "filterMenu['type'] = 'Function'"> Function</b-dropdown-item>
+                    <b-dropdown-item class="fa fa-clock" @click.stop = "filterMenu['type'] = 'Datetime'"> Date</b-dropdown-item>
+                    <b-dropdown-item class = "fa fa-bullseye" @click.stop = "filterMenu['type'] = 'Target'"> Target</b-dropdown-item>
+                    </b-dropdown>
+                    <b-input v-model="filterMenu['text']"></b-input>
+                    <b-btn variant="secondary" @click="addFilter">Add</b-btn>
+                    
                 </b-nav-form>
-                <b-nav-item v-b-modal.filterModal><i class="fa fa-times-circle"></i> Remove </b-nav-item>
+                <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
             </b-navbar-nav>
             <b-navbar-nav v-if="navSelection == 'Actions'">
                 <b-nav-item><i class="fa fa-undo"></i> Refresh</b-nav-item>
@@ -58,10 +62,11 @@
                     <ul>
                         <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
                             <i class="fa" :class="{
-                                'fa-bullseye': filter.type == 'target',
-                                'fa-wrench': filter.type == 'function'
+                                'fa-bullseye': filter['type'] == 'Target',
+                                'fa-wrench': filter['type'] == 'Function',
+                                'fa-clock': filter['type'] == 'Datetime',
                             }"></i>
-                            {{ filter.string }} applied on {{ filter.type }}
+                            {{ filter.string }} applied on {{ filter['type'] }}
                             <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
@@ -69,7 +74,7 @@
         </b-navbar>
         <job-item v-if="jobs" v-for="job in jobsSorted" :job="job" :key="job.jid">
         </job-item>
-        <spinner v-if="!jobs"></spinner>
+        <spinner v-if="jobs.length == 0"></spinner>
     </b-col>
 </template>
 
@@ -166,6 +171,14 @@ export default {
             else return false
             console.debug("FAIL Job data not loaded from cache")
         },
+        addFilter: function() {
+            // If not enough info return right away
+            if(this.filterMenu['type'] == "Choose filter type" || this.filterMenu['text'].length == 0) return false
+            // Add filter to list
+            this.filters.push({'type':this.filterMenu['type'],'string':this.filterMenu['text']})
+            return true
+    
+        }
     },
     data() {
         return {
@@ -175,6 +188,7 @@ export default {
             jobs: [],
             sort: 'functionSortUp',
             filters: [],
+            filterMenu: {"type": "Choose filter type", "text": ""},
             navSelection: 'Sorts',
             searchQuery: null
         }
@@ -188,6 +202,27 @@ export default {
     },
     computed: {
         jobsSorted: function() {
+            /* 
+            if(this.filters){
+                for (filter in filters){
+                    if (filter.type == 'verbosity'){
+
+                    }
+                    if (filter.type == 'targets'){
+
+                    }
+                    if (filter.type == 'starttime'){
+
+                    }
+                    if (filter.type == 'function'){
+
+                    }
+                    if (filter.type == 'result'){
+                        
+                    }
+                }
+            }
+            */            
             if (this.sort == 'functionSortUp'){
                 return this.jobs.sort(function(a,b) {
                     if(a.properties.Function < b.properties.Function) return 1;
@@ -252,10 +287,9 @@ export default {
    width:100%;
    top:40px; 
    z-index:1;
-   background-color:white;
+   background-color:#597151;
+   color:white;
    border-radius: 2px;
-   border-style: solid;
-   border-color:gray;
 }
 .searchResultItem{
     padding:5px;
