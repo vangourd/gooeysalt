@@ -5,12 +5,7 @@
                     <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }}
                     <p class="small text-secondary">
                         {{ job.properties.StartTime }} <br>
-                    <!-- <b-btn @click="loadJobData"
-                        :class="showJobData ? 'collapsed' : null" 
-                        v-bind:aria-controls="job.jid" 
-                        :aria-expanded="showJobData ? 'true': 'false'" size="sm" variant="light">
-                        Show results
-                    </b-btn> -->
+                    
                     <b-collapse v-model="showJobData" :id=" 'collapse' + job.jid">
                         <p v-if="!this.jobData">Loading...</p>
                         <p>
@@ -20,9 +15,7 @@
                     </p>
             </b-col>
             <b-col cols="2">
-                <i class="fa fa-check">:12</i>
-                <i class="fa fa-times">:3</i>
-                <i class="fa fa-download"></i>
+                <i @click="loadJobData" class="fa fa-download big"></i>
             </b-col>
         </b-row>
     </b-card>
@@ -44,11 +37,11 @@ export default {
     },
     methods: {
         loadJobData: function(){
-            if(this.jobData){console.debug('Job data loaded'); showJobData = !showJobData}
+            if(this.jobData){console.debug('Job data loaded'); showJobData = !showJobData;return true}
             axios.post('https://' + this.state.auth.server + 
                     ':' + this.state.auth.port + '/', {
                         client: "runner",
-                        fun: "jobs.print_job",
+                        fun: "jobs.lookup_jid",
                         jid: this.job.jid
                     },{
                         headers: {

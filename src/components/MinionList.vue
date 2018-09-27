@@ -39,16 +39,29 @@
     </b-navbar>
     <div v-if="minions" v-for="minion in minionSorted" :key="minion.name">
         <b-card v-if="minion.properties">
-            <!-- Name and OS Type -->
-            <span>
-                <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
-                <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
-                <strong>{{ minion.properties.host }}</strong>
-            </span><br>
-            <!-- Properties -->
-            <span>
-                <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
-            </span>
+            <b-row>
+                <b-col cols="10">
+                    <!-- Name and OS Type -->
+                    <span>
+                        <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
+                        <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
+                        <strong>{{ minion.properties.host }}</strong><br>
+                        {{ minion.properties.osfullname}}<br>
+                        {{ minion.properties.productname }}
+                        {{ minion.properties.cpu_model }}
+                    </span><br>
+                    <!-- Properties -->
+                    <span>
+                        <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
+                    </span>
+                </b-col>
+                <b-col cols="2">
+                    <b-btn class="fa fa-terminal" variant="light" :href="'ssh://' + minion.properties.fqdn"></b-btn>
+                    <b-btn class="fa fa-desktop" variant="light" :href="'rdp://' + minion.properties.fqdn"></b-btn> <br>
+                    <b-btn class="fa fa-link" variant="light" :href="'https://' + minion.properties.fqdn"></b-btn>
+                    <b-btn class="fa fa-tasks" variant="light"></b-btn>
+                </b-col>
+            </b-row>
         </b-card>
         <b-card class="minioncard text-muted" v-if="minion.properties == null">
             <i class="fa fa-bed"></i>
@@ -88,7 +101,8 @@ export default {
                         }
                     })
                     .then((response) => {
-                        if (response['data']['return'] == undefined){console.debug("No recent jobs");return false}
+                        if (response['data']['return'][0] == false){console.debug("No recent jobs");return false}
+                        if (response['data']['return'][0] == undefined){console.debug("No recent jobs");return false}
                         // Once API call received
                         // TODO: Figure out a way to catch Salt Errors when no jobs are found
                         var query = response['data']['return'][0]

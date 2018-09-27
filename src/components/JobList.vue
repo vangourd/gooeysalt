@@ -48,7 +48,8 @@
                     <b-dropdown-item class = "fa fa-bullseye" @click.stop = "filterMenu['type'] = 'Target'"> Target</b-dropdown-item>
                     </b-dropdown>
                     <b-input v-model="filterMenu['text']"></b-input>
-                    <b-btn variant="secondary" @click="addFilter">Add</b-btn>
+                    <b-btn variant="primary" @click="addFilter('Include')">Include</b-btn>
+                    <b-btn variant="warning" @click="addFilter('Exclude')">Exclude</b-btn>
                     
                 </b-nav-form>
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
@@ -66,7 +67,7 @@
                                 'fa-wrench': filter['type'] == 'Function',
                                 'fa-clock': filter['type'] == 'Datetime',
                             }"></i>
-                            {{ filter['type'] }} with "{{ filter.string }}"
+                            {{ filter['behavior'] }} {{ filter['type'] }} with "{{ filter['string'] }}"
                             <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
@@ -74,7 +75,18 @@
         </b-navbar>
         <job-item v-if="jobs" v-for="job in jobsSorted" :job="job" :key="job.jid">
         </job-item>
-        <spinner v-if="jobs.length == 0"></spinner>
+        <b-alert variant="warning" v-if="jobsSorted.length == 0 && this.jobs.length != 0" show>
+            <p>No jobs found based on your filters. Try opening our filter list and removing more filters.</p>
+            <i class="fa fa-frown"></i>
+        </b-alert>
+        <spinner v-if="jobs.length == 0 && this.state.auth.status == true"></spinner>
+        <h2 v-if=" this.state.auth.status == false">
+            You are not authenticated
+            <br>
+            <br>
+            <br>
+
+        </h2>
     </b-col>
 </template>
 
@@ -171,11 +183,12 @@ export default {
             else return false
             console.debug("FAIL Job data not loaded from cache")
         },
-        addFilter: function() {
+        addFilter: function(behavior) {
             // If not enough info return right away
             if(this.filterMenu['type'] == "Choose filter type" || this.filterMenu['text'].length == 0) return false
             // Add filter to list
-            this.filters.push({'type':this.filterMenu['type'],'string':this.filterMenu['text']})
+            this.filters.push({'type':this.filterMenu['type'],'string':this.filterMenu['text'],'behavior':behavior})
+            this.filterMenu['text'] = ''
             return true
     
         }
@@ -187,7 +200,12 @@ export default {
             jid: null,
             jobs: [],
             sort: 'functionSortUp',
-            filters: [],
+            filters: [
+                {
+                    'type':'Datetime','string': new Date(Date.now() - 36000000,),
+                    'type':'Datetime','string': new Date() 
+                }
+            ],
             filterMenu: {"type": "Choose filter type", "text": ""},
             navSelection: 'Sorts',
             searchQuery: null,
@@ -203,44 +221,88 @@ export default {
     },
     computed: {
         jobsSorted: function() {
-
-            var filteredjobs = []
-            console.debug('Filtered job length is ' + filteredjobs.length)
+          
+          // #### FILTER LOGIC ####
             if(this.filters.length > 0){
-                for (var filter in this.filters){
-                    // if (filter.type == 'verbosity'){
-                    
-                    // }
-                    if (this.filters[filter].type == 'Target') {
-                        var start = this.jobs
-                        var end = []
-                        for (var job in start){
-                            if (start[job].properties.Target.includes(this.filters[filter]['string']) ){
-                                filteredjobs.push(start[job])
-                            }
-                        }
-                        //console.debug(remove)
-                        //for (var i in remove){
-                        //    console.debug('Removing ' + remove[i])
-                        //    filteredjobs.splice(remove[i],1)
-                        //}
-                        console.debug("Filtered job lenght post filter is" + filteredjobs.length)
+                // Copy the jobs requested from server
+                var unfilteredJobData = this.jobs
+                var targets = []
+                var funs = []
+                var datetime = {
+                    'start': new Date(Date.now() - 36000000,),
+                    'end': new Date()
                     }
-                //     if (filter.type == 'starttime'){
+                // Pull our selected targets from menu object
+                for (var filter in this.filters) {
+                   // If this isn't a target filter skip
+                    if (this.filters[filter].type != 'Target'){ continue }
+                    // If it is see if it has already been added
+                    if ( (!targets.includes(this.filters[filter].string) && (this.filters[filter].behavior === 'Include')  )){
+                        console.debug(this.filters[filter].behavior)
+                        targets.push(this.filters[filter].string)
+                    }
+                }   
+                console.debug('Targets: ' + targets.length)
 
-                //     }
-                //     if (filter.type == 'function'){
-
-                //     }
-                //     if (filter.type == 'result'){
-                        
-                //     }
-                // }
+                // Pull our selected functions from menu object 
+                for (var filter in this.filters) {
+                    if (this.filters[filter].type != 'Function'){ continue }
+                    if ( (!funs.includes(this.filters[filter].string)  && (this.filters[filter].behavior === 'Include')     )){
+                        funs.push(this.filters[filter].string)
+                    }
                 }
-            }
+                console.debug('Functions: ' + funs.length)
+
+                // Get earliest datetime and latest datetime assign to end result range
+                for (var filter in this.filters) {
+                    if (this.filters[filter].type != 'Datetime'){ continue }
+                    try{ var newdate = new Date(this.filters[filter].string) }
+                    catch(err) {
+                        console.debug(err)
+                        continue
+                    }
+                    if (newdate < datetime.start) {
+                        datetime.start = newdate
+                    }
+                    if (newdate > datetime.end) {
+                        datetime.end = newdate
+                    }
+                }
+                // Start by removing jobs that do not have the selected targets
+                var filteredjobs = []
+                for (var jobnum in unfilteredJobData){
+                    // If targets do not match skip adding to results
+                    if (!targets.includes(unfilteredJobData[jobnum].properties.Target)){
+                        // If there aren't any function selectors then move on
+                        if (targets.length > 0){
+                            console.debug('Filtered because of targets')
+                            continue 
+                        }
+                    }
+                    // If functions do not match skip adding to results
+                    if (!funs.includes(unfilteredJobData[jobnum].properties.Function)){
+                        // If there aren't any function selectors then move on
+                        if (funs.length > 0) { 
+                            console.debug(unfilteredJobData[jobnum].properties.Function)
+                            console.debug('Filtered because of function')
+                            continue 
+                        }
+                    }
+                    // If start time is before range or after range skip adding to results
+                    if (unfilteredJobData[jobnum].properties.StartTime < datetime.start || 
+                        unfilteredJobData[jobnum].properties.StartTime > datetime.end){
+                        console.debug('Filtered because of date')
+                        continue
+                    }
+                    filteredjobs.push(unfilteredJobData[jobnum])
+                }
+
+                }
             else {
                 filteredjobs = this.jobs
             }
+
+            // #### SORT LOGIC 
             if (this.sort == 'functionSortUp'){
                 return filteredjobs.sort(function(a,b) {
                     if(a.properties.Function < b.properties.Function) return 1;
@@ -307,6 +369,9 @@ export default {
 }
 .searchResultItem{
     padding:5px;
+}
+.fa-frown {
+    font-size:80px;
 }
 
 </style>
