@@ -3,15 +3,22 @@ import VueRouter from 'vue-router'
 import App from './App.vue'
 import BootstrapVue from 'bootstrap-vue'
 import Dashboard from './components/Dashboard.vue'
+import JobDetail from './components/JobDetail.vue'
 
 Vue.use(VueRouter)
 Vue.use(BootstrapVue)
 
 const routes = [{
   path: '/',
-  name: 'Dashboard',
+  name: 'dashboard',
   component: Dashboard
-}]
+}, {
+  path: '/job/:jid',
+  name: 'jobdetail',
+  component: JobDetail,
+  props: true
+}
+]
 
 const router = new VueRouter({
   routes
