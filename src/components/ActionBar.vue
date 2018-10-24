@@ -18,9 +18,6 @@
            <b-btn @click="changeView('reports')" class="fa fa-glasses" variant="light" v-bind:block="navopen">
                 <span v-if="navopen"> Reports</span>
            </b-btn> 
-           <b-btn @click="changeView('cli')" class="fa fa-terminal" variant="light" v-bind:block="navopen">
-                <span v-if="navopen"> Terminal</span>
-           </b-btn>
         </div>
     </nav>
 </template>

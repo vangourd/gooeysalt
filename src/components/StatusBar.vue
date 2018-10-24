@@ -27,6 +27,7 @@
                 <b-form-input type="password" v-model="password" placeholder="Password"></b-form-input>
                 <b-form-select v-model="state.auth.eauth" :options="options" placeholder="EAuthentication Type"></b-form-select>
                 <b-btn @click="saltApiLogin" :variant="connectButton.variant">{{ connectButton.text }}</b-btn>
+                <b-btn @click="clearData()" variant="danger">Clear local data</b-btn>
             </b-form-group>
         </b-modal>
         <!--TODO: Hide this when disconnected-->
@@ -108,6 +109,9 @@ import axios from 'axios'
                         console.error(error)
                     });
                 }
+            },
+            clearData: function() {
+                localStorage.clear();
             }
         },
         data() {

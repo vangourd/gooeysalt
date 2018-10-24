@@ -47,9 +47,17 @@
                     <b-dropdown-item class="fa fa-clock" @click.stop = "filterMenu['type'] = 'Datetime'"> Date</b-dropdown-item>
                     <b-dropdown-item class = "fa fa-bullseye" @click.stop = "filterMenu['type'] = 'Target'"> Target</b-dropdown-item>
                     </b-dropdown>
-                    <b-input v-model="filterMenu['text']"></b-input>
-                    <b-btn variant="primary" @click="addFilter('Include')">Include</b-btn>
-                    <b-btn variant="warning" @click="addFilter('Exclude')">Exclude</b-btn>
+                    <div v-if="filterMenu['type'] != 'Datetime'">
+                        <b-input v-model="filterMenu['text']"></b-input>
+                        <b-btn variant="primary" @click="addFilter('Include')">Include</b-btn>
+                        <b-btn variant="warning" @click="addFilter('Exclude')">Exclude</b-btn>
+                    </div>
+                    <div v-if="filterMenu['type'] == 'Datetime'">
+                        <b-input v-model="filterMenu['daterange']['from']['date']" type="date"></b-input>
+                        <b-input v-model="filterMenu['daterange']['from']['time']" type="time"></b-input>
+                        <b-input v-model="filterMenu['daterange']['to']['date']" type="date"></b-input>
+                        <b-input v-model="filterMenu['daterange']['to']['time']" type="time"></b-input>
+                    </div>
                     
                 </b-nav-form>
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
@@ -73,6 +81,7 @@
                     </ul>
             </b-modal>
         </b-navbar>
+        <jobcreator></jobcreator>
         <job-item v-if="jobs" v-for="job in jobsSorted" :job="job" :key="job.jid">
         </job-item>
         <b-alert variant="warning" v-if="jobsSorted.length == 0 && this.jobs.length != 0" show>
@@ -94,6 +103,7 @@
 import axios from 'axios'
 import JobItem from './JobItem.vue'
 import Spinner from './Spinner.vue'
+import JobCreator from './Jobs/JobCreator.vue'
 
 
 export default {
@@ -101,6 +111,7 @@ export default {
     name: 'joblist',
     components: {
         'job-item': JobItem,
+        'jobcreator': JobCreator,
         'spinner': Spinner
     },
     methods: {
@@ -184,10 +195,21 @@ export default {
             console.debug("FAIL Job data not loaded from cache")
         },
         addFilter: function(behavior) {
+            console.debug('Adding filter')
             // If not enough info return right away
-            if(this.filterMenu['type'] == "Choose filter type" || this.filterMenu['text'].length == 0) return false
+            if(this.filterMenu['type'] == "Choose filter type" || 
+               this.filterMenu['text'].length == 0) return false
             // Add filter to list
-            this.filters.push({'type':this.filterMenu['type'],'string':this.filterMenu['text'],'behavior':behavior})
+            if(this.filterMenu['type'] != "Datetime"){
+                this.filters.push({
+                    'type':this.filterMenu['type'],
+                    'string':this.filterMenu['text'],
+                    'behavior':behavior})
+            }
+            if (behavior == 'Datetime'){
+                this.filterMenu.daterange.set = !this.filterMenu.daterange.set
+            }
+            
             this.filterMenu['text'] = ''
             return true
     
@@ -200,13 +222,22 @@ export default {
             jid: null,
             jobs: [],
             sort: 'functionSortUp',
-            filters: [
-                {
-                    'type':'Datetime','string': new Date(Date.now() - 36000000,),
-                    'type':'Datetime','string': new Date() 
-                }
-            ],
-            filterMenu: {"type": "Choose filter type", "text": ""},
+            filters: [],
+            filterMenu: {
+                "type": "Choose filter type", 
+                "text": "",
+                "daterange": {
+                    "from": {
+                        "date": new Date(Date.now() - 86400000).toISOString().slice(0,10),
+                        "time": new Date(Date.now() - 86400000).toTimeString().slice(0,8)
+                    },
+                    "to": {
+                        "date": new Date(Date.now()).toISOString().slice(0,10),
+                        "time": new Date().toTimeString().slice(0,8)
+                    },
+                    "set": false
+                },
+            },
             navSelection: 'Sorts',
             searchQuery: null,
             testData: null,
@@ -214,93 +245,148 @@ export default {
     },
     created() {
         if(!this.initView()){this.loadJobs()}
-        this.timer = setInterval(this.loadJobs, 60000)
+        this.timer = setInterval(this.loadJobs, 40000)
     },
     beforeDestroy() {
         clearInterval(this.timer)
     },
     computed: {
+        // dateFilterRange: function() {
+        //     if (this.filterMenu['daterange']['set']){
+        //         return {
+        //             "from": new Date(
+        //                 this.filterMenu['daterange']['from']['date'] +
+        //                 this.filterMenu['daterange']['from']['time']
+        //             ),
+        //             "to": this.filterMenu['daterange']['to']['date']
+        //         }
+        //     }
+        //     else {
+        //         return {
+        //             'from': new Date(Date.now() - 86400000) ,
+        //             'to': new Date()}
+        //     }
+        // },
         jobsSorted: function() {
-          
-          // #### FILTER LOGIC ####
-            if(this.filters.length > 0){
-                // Copy the jobs requested from server
-                var unfilteredJobData = this.jobs
-                var targets = []
-                var funs = []
-                var datetime = {
-                    'start': new Date(Date.now() - 36000000,),
-                    'end': new Date()
-                    }
-                // Pull our selected targets from menu object
-                for (var filter in this.filters) {
-                   // If this isn't a target filter skip
-                    if (this.filters[filter].type != 'Target'){ continue }
-                    // If it is see if it has already been added
-                    if ( (!targets.includes(this.filters[filter].string) && (this.filters[filter].behavior === 'Include')  )){
-                        console.debug(this.filters[filter].behavior)
-                        targets.push(this.filters[filter].string)
-                    }
-                }   
-                console.debug('Targets: ' + targets.length)
+            
+            var filteredjobs = []
+            var start = new Date( this.filterMenu.daterange['from']['time'] + ' ' + 
+                        this.filterMenu.daterange['from']['date'] )
 
-                // Pull our selected functions from menu object 
-                for (var filter in this.filters) {
-                    if (this.filters[filter].type != 'Function'){ continue }
-                    if ( (!funs.includes(this.filters[filter].string)  && (this.filters[filter].behavior === 'Include')     )){
-                        funs.push(this.filters[filter].string)
-                    }
-                }
-                console.debug('Functions: ' + funs.length)
+            var end = new Date(this.filterMenu.daterange['to']['time'] + ' ' +
+                        this.filterMenu.daterange['to']['date'] )
 
-                // Get earliest datetime and latest datetime assign to end result range
-                for (var filter in this.filters) {
-                    if (this.filters[filter].type != 'Datetime'){ continue }
-                    try{ var newdate = new Date(this.filters[filter].string) }
-                    catch(err) {
-                        console.debug(err)
-                        continue
-                    }
-                    if (newdate < datetime.start) {
-                        datetime.start = newdate
-                    }
-                    if (newdate > datetime.end) {
-                        datetime.end = newdate
-                    }
+            if(start == 'Invalid Date' || end == 'Invalid Date'){console.log('Invalid date range'); return}
+            if (this.filters.length <= 0){console.debug('No filters applied');return this.jobs}
+
+            for (var job in this.jobs){
+                var jobstart = new Date(this.jobs[job]['properties']['StartTime'])
+                var jobend = new Date(this.jobs[job]['properties']['StartTime'])
+                if(jobstart == 'Invalid Date'){console.debug(job.jid = 'Had invalid date'); continue}
+                if(jobend == 'Invalid Date'){console.debug(job.jid = 'Had invalid date'); continue}
+                // Skip jobs outside of our desired date range
+                if (jobstart <= start){
+                    console.debug("Job occurs before start range")
+                    continue 
                 }
-                // Start by removing jobs that do not have the selected targets
-                var filteredjobs = []
-                for (var jobnum in unfilteredJobData){
-                    // If targets do not match skip adding to results
-                    if (!targets.includes(unfilteredJobData[jobnum].properties.Target)){
-                        // If there aren't any function selectors then move on
-                        if (targets.length > 0){
-                            console.debug('Filtered because of targets')
-                            continue 
-                        }
+                if (jobend >= end){
+                    console.debug("Job occurs after end range")
+                    continue 
+                }
+                // Start applying filters
+                for (var filter in this.filters){
+                    // Skip datefilters as they've already been applied
+                    // Functions && Targets matching a string
+                    var jobFunction = this.jobs[job]['properties'][this.filters[filter]['type']]
+                    console.debug(jobFunction)
+                    if (jobFunction.includes(filter['string'])){
+                        console.debug('Job ' + job.jid + ' passed filter ' + filter.type + filter.string)
+                        filteredjobs.push(job)
                     }
-                    // If functions do not match skip adding to results
-                    if (!funs.includes(unfilteredJobData[jobnum].properties.Function)){
-                        // If there aren't any function selectors then move on
-                        if (funs.length > 0) { 
-                            console.debug(unfilteredJobData[jobnum].properties.Function)
-                            console.debug('Filtered because of function')
-                            continue 
-                        }
-                    }
-                    // If start time is before range or after range skip adding to results
-                    if (unfilteredJobData[jobnum].properties.StartTime < datetime.start || 
-                        unfilteredJobData[jobnum].properties.StartTime > datetime.end){
-                        console.debug('Filtered because of date')
-                        continue
-                    }
-                    filteredjobs.push(unfilteredJobData[jobnum])
                 }
 
-                }
-            else {
-                filteredjobs = this.jobs
             }
+            console.debug('Exiting initial loop')
+
+        //   // #### FILTER LOGIC ####
+        //     if(this.filters.length > 0){
+        //         // Copy the jobs requested from server
+        //         var unfilteredJobData = this.jobs
+        //         var targets = []
+        //         var funs = []
+        //         var datetime = {
+        //             'start': new Date(Date.now() - 36000000,),
+        //             'end': new Date()
+        //             }
+        //         // Pull our selected targets from menu object
+        //         for (var filter in this.filters) {
+        //            // If this isn't a target filter skip
+        //             if (this.filters[filter].type != 'Target'){ continue }
+        //             // If it is see if it has already been added
+        //             if ( (!targets.includes(this.filters[filter].string) && (this.filters[filter].behavior === 'Include')  )){
+        //                 console.debug(this.filters[filter].behavior)
+        //                 targets.push(this.filters[filter].string)
+        //             }
+        //         }   
+        //         console.debug('Targets: ' + targets.length)
+
+        //         // Pull our selected functions from menu object 
+        //         for (var filter in this.filters) {
+        //             if (this.filters[filter].type != 'Function'){ continue }
+        //             if ( (!funs.includes(this.filters[filter].string)  && (this.filters[filter].behavior === 'Include')     )){
+        //                 funs.push(this.filters[filter].string)
+        //             }
+        //         }
+        //         console.debug('Functions: ' + funs.length)
+
+        //         // Get earliest datetime and latest datetime assign to end result range
+        //         for (var filter in this.filters) {
+        //             if (this.filters[filter].type != 'Datetime'){ continue }
+        //             try{ var newdate = new Date(this.filters[filter].string) }
+        //             catch(err) {
+        //                 console.debug(err)
+        //                 continue
+        //             }
+        //             if (newdate < datetime.start) {
+        //                 datetime.start = newdate
+        //             }
+        //             if (newdate > datetime.end) {
+        //                 datetime.end = newdate
+        //             }
+        //         }
+        //         // Start by removing jobs that do not have the selected targets
+        //         var filteredjobs = []
+        //         for (var jobnum in unfilteredJobData){
+        //             // If targets do not match skip adding to results
+        //             if (!targets.includes(unfilteredJobData[jobnum].properties.Target)){
+        //                 // If there aren't any function selectors then move on
+        //                 if (targets.length > 0){
+        //                     console.debug('Filtered because of targets')
+        //                     continue 
+        //                 }
+        //             }
+        //             // If functions do not match skip adding to results
+        //             if (!funs.includes(unfilteredJobData[jobnum].properties.Function)){
+        //                 // If there aren't any function selectors then move on
+        //                 if (funs.length > 0) { 
+        //                     console.debug(unfilteredJobData[jobnum].properties.Function)
+        //                     console.debug('Filtered because of function')
+        //                     continue 
+        //                 }
+        //             }
+        //             // If start time is before range or after range skip adding to results
+        //             if (unfilteredJobData[jobnum].properties.StartTime < datetime.start || 
+        //                 unfilteredJobData[jobnum].properties.StartTime > datetime.end){
+        //                 console.debug('Filtered because of date')
+        //                 continue
+        //             }
+        //             filteredjobs.push(unfilteredJobData[jobnum])
+        //         }
+
+        //         }
+            // else {
+            //     filteredjobs = this.jobs
+            // }
 
             // #### SORT LOGIC 
             if (this.sort == 'functionSortUp'){
@@ -372,6 +458,10 @@ export default {
 }
 .fa-frown {
     font-size:80px;
+}
+.full-add-button {
+    width: 100%;
+    border-radius:0
 }
 
 </style>
