@@ -2,6 +2,7 @@
     <div>
         <b-btn class="collapsebutton" 
                v-b-toggle.collapseCreateJob
+               @click="resetStatus"
                variant="light">
             <i class="fa fa-plus"></i>
         </b-btn>
@@ -9,11 +10,11 @@
             <strong>Create new job</strong>
             <b-form-group>
                 <b-form-input v-model="jobInput" placeholder="Enter your command here"></b-form-input>
-                <b-form-text v-if="stagedJob['targetType']">Type: {{ stagedJob['targetType'] }}</b-form-text>
-                <b-form-text>Target: {{ stagedJob['jobTarget'] }}</b-form-text>
-                <b-form-text>Function: {{ stagedJob['jobFunction'] }}</b-form-text>
-                <b-form-text v-if="stagedJob['jobArguments']">Arguments: {{ stagedJob['jobArguments'] }}</b-form-text>
-                <b-btn @click="submitJob">Submit</b-btn>
+                <b-form-text v-if="stagedJob.data.client">Type: {{ stagedJob.data.client}}</b-form-text>
+                <b-form-text>Target: {{ stagedJob.data.tgt }}</b-form-text>
+                <b-form-text>Function: {{ stagedJob.data.fun }}</b-form-text>
+                <b-form-text v-if="stagedJob.data.arg">Arguments: {{ stagedJob.data.arg }}</b-form-text>
+                <b-btn :variant="jobStatus.variant" @click="submitJob">{{ jobStatus.text }}</b-btn>
             </b-form-group>
         </b-collapse>
     </div>
@@ -26,51 +27,78 @@ export default {
     name: 'jobcreator',
     data() { 
         return {
-            jobInput: ''
+            jobInput: '',
+            jobStatus: {'text':'Submit','variant':'secondary'},
+            state: this.$root.sharedState.state,
         }
     },
     computed: {
         stagedJob: function() {
+            if(!this.jobInput){return {data:{
+                'client': null,
+                'tgt': null,
+                'fun': null,
+                'arg': null,
+
+            }}}
             try {
-                var retdata = {}
+                var data = {}
                 var command = this.jobInput.split(' ')
                 if (command[0].match(/-/)){
-                    if(command[0] == '-G') { retdata['targetType'] = 'grains'}
-                    if (command[0] == '-C') { retdata['targetType'] = 'compound'}
+                    if(command[0] == '-G') { data.client = 'grains'}
+                    if(command[0] == '-C') { data.client = 'compound'}
                     command.shift()
                 }
-                retdata['jobTarget'] = command[0]
-                retdata['jobFunction'] = command[1]
-                if (command.length > 2){
-                    retdata['jobArguments'] = command.splice(2)
-                }
                 else {
-                    retdata['jobArguments'] = false
+                    data.client = 'local'
                 }
+                if (command.length > 2){
+                    data.arg = command.splice(2)
+                }
+                data.tgt = command[0] || null,
+                data.fun = command[1] || null
                 return {
-                    'targetType': retdata.targetType,
-                    'jobTarget': retdata.jobTarget,
-                    'jobFunction': retdata.jobFunction,
-                    'jobArguments': retdata.jobArguments
+                    data
                 }
+
             }
             catch(err){
                 console.debug(err)
             }
-
         },
     },
     methods: {
         submitJob: function() {
-            if (this.stagedJob.jobTarget && 
-                this.stagedJob.jobFunction) {
-                    console.debug(this.stagedJob)
-                    this.jobInput = ''
-
+            var data = this.stagedJob.data
+            if(! (
+                data.client && data.tgt && data.fun
+            )){this.jobStatus.text = "Missing information";this.jobStatus.variant = "warning"; return}
+            this.jobStatus.text = "Sending job..."
+            this.jobStatus.variant = "primary"
+            axios.post('https://' + this.state.auth.server + 
+                    ':' + this.state.auth.port + '/', data,{
+                    headers: {
+                        'x-auth-token': this.state.auth.token,
+                        'content-type': 'application/json',
+                        'accept': 'application/json'
+                    }
+                            })
+                    .then(() => {
+                        this.jobStatus.text = "Job Submitted"
+                        this.jobStatus.variant = 'success'
+                        console.debug('That thing to do after the post was sent')
+                    })
+                    .catch((err) => {
+                        console.debug(err)
+                    })
+                },
+            resetStatus: function() {
+                this.jobStatus.text = 'Submit'
+                this.jobStatus.variant = 'secondary'
+                this.jobInput = null
             }
         }
     }
-}
 
 </script>
 

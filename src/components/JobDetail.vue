@@ -6,6 +6,7 @@
             <b-btn @click="loadData">Refresh <i class="fa fa-undo"></i></b-btn>
             <div v-if="job">
                 <h2><strong> {{ job.properties.Function}}</strong> on {{ job.properties.Target }} </h2>
+                <a :href="'data:' + downloadData" download="data.json">download JSON</a>
                 {{ job.jid }}
                 <br>
                 <h3>Return data</h3>
@@ -79,8 +80,14 @@ export default {
     },
     computed: {
         formattedData: function () {
-            if(this.jobReturn == null){return}
+            if(this.jobReturn){
             return JSON.stringify(this.jobReturn, 2)
+            }
+        },
+        downloadData: function() {
+            if(this.jobReturn){
+                return "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.jobReturn, 2))
+            }
         }
     },
     created() {
