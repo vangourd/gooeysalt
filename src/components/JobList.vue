@@ -3,13 +3,9 @@
         <b-navbar toggleable="sm" type="dark" variant="dark">
             <b-navbar-toggle target="jobs_collapse"></b-navbar-toggle>
             <b-navbar-brand class="fa fa-tasks"> Jobs</b-navbar-brand>
-            <b-dropdown :text="navSelection">
-                    <b-dropdown-item @click = "navSelection = 'Sorts'">Sorts</b-dropdown-item>
-                    <b-dropdown-item @click = "navSelection = 'Actions'">Actions</b-dropdown-item>
-                    <b-dropdown-item @click = "navSelection = 'Filters'">Filters</b-dropdown-item>
-            </b-dropdown>
             <b-collapse is-nav id="jobs_collapse">
-            <b-navbar-nav v-if="navSelection == 'Sorts'">
+            <b-navbar-nav >
+                <!-- Jobs Action Bar -->
                 <b-nav-item @click="toggleSort('function')">
                     <i class="fa" :class="{
                         'fa-sort-up': this.sort == 'functionSortUp',
@@ -38,36 +34,13 @@
                         'fa-bullseye': !this.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-            </b-navbar-nav>
-            <!-- Filter results autocomplete -->
-            <b-navbar-nav v-if="navSelection == 'Filters'">
-                <b-nav-form class="position-relative">
-                    <b-dropdown :text="filterMenu['type']" variant="light">
-                    <b-dropdown-item class="fa fa-wrench" @click.stop = "filterMenu['type'] = 'Function'"> Function</b-dropdown-item>
-                    <b-dropdown-item class="fa fa-clock" @click.stop = "filterMenu['type'] = 'Datetime'"> Date</b-dropdown-item>
-                    <b-dropdown-item class = "fa fa-bullseye" @click.stop = "filterMenu['type'] = 'Target'"> Target</b-dropdown-item>
-                    </b-dropdown>
-                    <div v-if="filterMenu['type'] != 'Datetime'">
-                        <b-input v-model="filterMenu['text']"></b-input>
-                        <b-btn variant="primary" @click="addFilter('Include')">Include</b-btn>
-                        <b-btn variant="warning" @click="addFilter('Exclude')">Exclude</b-btn>
-                    </div>
-                    <div v-if="filterMenu['type'] == 'Datetime'">
-                        <b-input v-model="filterMenu['daterange']['from']['date']" type="date"></b-input>
-                        <b-input v-model="filterMenu['daterange']['from']['time']" type="time"></b-input>
-                        <b-input v-model="filterMenu['daterange']['to']['date']" type="date"></b-input>
-                        <b-input v-model="filterMenu['daterange']['to']['time']" type="time"></b-input>
-                    </div>
-                    
-                </b-nav-form>
+                <b-nav-item @click="loadJobs"><i class="fa fa-undo"></i> Refresh</b-nav-item>
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
             </b-navbar-nav>
-            <b-navbar-nav v-if="navSelection == 'Actions'">
-                <b-nav-item @click="loadJobs"><i class="fa fa-undo"></i> Refresh</b-nav-item>
-            </b-navbar-nav>
             </b-collapse>
-            <b-modal id="filterModal">
-                    <strong>Applied Filters</strong>
+            <!-- Filters Modal Menu -->
+            <b-modal id="filterModal" title="Filters Menu">
+                    <strong>Applied:</strong>
                     <ul>
                         <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
                             <i class="fa" :class="{
@@ -75,10 +48,40 @@
                                 'fa-wrench': filter['type'] == 'Function',
                                 'fa-clock': filter['type'] == 'Datetime',
                             }"></i>
-                            {{ filter['behavior'] }} {{ filter['type'] }} with "{{ filter['string'] }}"
+                            {{ index }} {{ filter['action'] }} {{ filter['type'] }} with "{{ filter['string'] }}"
                             <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
+                        <strong>Add:</strong><br>
+                        <b-form-group>
+                            <b-dropdown :text="filterMenu.type">
+                                <b-dropdown-item @click="filterMenu.type = 'Function'">Function</b-dropdown-item>
+                                <b-dropdown-item @click="filterMenu.type = 'Target'">Target</b-dropdown-item>
+                                <b-dropdown-item @click="filterMenu.type = 'Arguments'">Arguments</b-dropdown-item>
+                                <b-dropdown-item @click="filterMenu.type = 'Daterange'">Daterange</b-dropdown-item>
+                            </b-dropdown>
+                            <b-input v-if="!(filterMenu.type == 'Daterange')" 
+                                    placeholder="String" v-model="filterMenu.text">
+                            </b-input>
+                            <b-form-group v-if="filterMenu.type == 'Daterange'">
+                                <label>From</label>
+                                <b-input :placeholder="new Date().toLocaleString()"></b-input>
+                                <label>To</label>
+                                <b-input :placeholder="new Date(
+                                    new Date().setHours(
+                                        new Date().getHours()-8
+                                        ) 
+                                    ).toLocaleString()">
+                                </b-input>
+
+                            </b-form-group>
+                            <b-dropdown :text="filterMenu.action">
+                                <b-dropdown-item @click="filterMenu.action = 'Include'">Include</b-dropdown-item>
+                                <b-dropdown-item @click="filterMenu.action = 'Exclude'">Exclude</b-dropdown-item>
+                            </b-dropdown>
+                            <b-btn :variant="this.filterMenu.variant" @click="addFilter">Add</b-btn>
+
+                        </b-form-group>
             </b-modal>
         </b-navbar>
         <jobcreator></jobcreator>
@@ -194,25 +197,26 @@ export default {
             else return false
             console.debug("FAIL Job data not loaded from cache")
         },
-        addFilter: function(behavior) {
-            console.debug('Adding filter')
+        addFilter: function() {
             // If not enough info return right away
             if(this.filterMenu['type'] == "Choose filter type" || 
-               this.filterMenu['text'].length == 0) return false
-            // Add filter to list
-            if(this.filterMenu['type'] != "Datetime"){
-                this.filters.push({
-                    'type':this.filterMenu['type'],
-                    'string':this.filterMenu['text'],
-                    'behavior':behavior})
+               this.filterMenu['text'].length == 0)
+            {    
+                this.filterMenu.variant = "danger"; return false
             }
-            if (behavior == 'Datetime'){
+            // Add filter to list
+            if(this.filterMenu['type'] != "Daterange"){
+                console.debug('Pushing filter' + this.filterMenu.text)
+                this.filters.push({
+                    'type':     this.filterMenu['type'],
+                    'string':   this.filterMenu['text'],
+                    'action':   this.filterMenu['action']})
+                this.filterMenu.variant = "success"
+            }
+            if (this.filterMenu.action == 'Daterange'){
                 this.filterMenu.daterange.set = !this.filterMenu.daterange.set
             }
             
-            this.filterMenu['text'] = ''
-            return true
-    
         }
     },
     data() {
@@ -237,6 +241,8 @@ export default {
                     },
                     "set": false
                 },
+                "action": "Include/Exclude",
+                "variant": "primary",
             },
             navSelection: 'Sorts',
             searchQuery: null,
@@ -251,22 +257,7 @@ export default {
         clearInterval(this.timer)
     },
     computed: {
-        // dateFilterRange: function() {
-        //     if (this.filterMenu['daterange']['set']){
-        //         return {
-        //             "from": new Date(
-        //                 this.filterMenu['daterange']['from']['date'] +
-        //                 this.filterMenu['daterange']['from']['time']
-        //             ),
-        //             "to": this.filterMenu['daterange']['to']['date']
-        //         }
-        //     }
-        //     else {
-        //         return {
-        //             'from': new Date(Date.now() - 86400000) ,
-        //             'to': new Date()}
-        //     }
-        // },
+        
         jobsSorted: function() {
             
             var filteredjobs = []
@@ -462,6 +453,11 @@ export default {
 .full-add-button {
     width: 100%;
     border-radius:0
+}
+
+#collapseNewFilterButton{
+    width:100%;
+    border-radius: 0;
 }
 
 </style>
