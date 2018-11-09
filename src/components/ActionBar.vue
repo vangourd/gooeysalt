@@ -46,6 +46,11 @@ export default {
         selection: '',
         }
     },
+    created() {
+        if (this.state.auth.status == false){
+            this.toggleNav()
+        }
+    }
 }
 </script>
 

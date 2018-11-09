@@ -6,7 +6,6 @@
                 <joblist v-if="state.current_view === 'jobs' "></joblist>
                 <minionlist v-if="state.current_view === 'minions' "></minionlist>
                 <reports v-if="state.current_view === 'reports' "></reports>
-                </b-col>
         </b-row>
     </b-container>
 </template>

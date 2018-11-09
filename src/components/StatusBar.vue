@@ -3,7 +3,7 @@
         <b-btn :variant="state.auth.variant" v-b-modal.connectionModal>
             {{ state.auth.short_message }}
         </b-btn>
-        <b-modal id="connectionModal">
+        <b-modal id="connectionModal" title="Login" v-model="modalShow">
             <b-badge :variant="state.auth.variant">
                  {{ state.auth.message }}
             </b-badge>
@@ -102,7 +102,8 @@ import axios from 'axios'
                         this.response.token,
                         this.response.user,
                         this.response.expire,
-                        this.response.perms
+                        this.response.perms,
+                        this.modalShow = false
                         )
                     })
                     .catch(error => {
@@ -128,6 +129,7 @@ import axios from 'axios'
                 response: null,
                 password: null,
                 state: this.$root.sharedState.state,
+                modalShow: true,
             }
         },
         computed: {
@@ -138,6 +140,11 @@ import axios from 'axios'
                 else {
                     return {'variant':'primary','text':'Connect'}
                 }
+            }
+        },
+        created() {
+            if (this.state.auth.status == true){
+                this.modalShow=false
             }
         }
     };

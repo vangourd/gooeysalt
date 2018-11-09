@@ -48,7 +48,7 @@
                                 'fa-wrench': filter['type'] == 'Function',
                                 'fa-clock': filter['type'] == 'Datetime',
                             }"></i>
-                            {{ index }} {{ filter['action'] }} {{ filter['type'] }} with "{{ filter['string'] }}"
+                            {{ index }} {{ filter['action'] }} {{ filter['type'] }} with "{{ filter['value'] }}"
                             <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
                         </li>
                     </ul>
@@ -61,7 +61,7 @@
                                 <b-dropdown-item @click="filterMenu.type = 'Daterange'">Daterange</b-dropdown-item>
                             </b-dropdown>
                             <b-input v-if="!(filterMenu.type == 'Daterange')" 
-                                    placeholder="String" v-model="filterMenu.text">
+                                    placeholder="String" v-model="filterMenu.value">
                             </b-input>
                             <b-form-group v-if="filterMenu.type == 'Daterange'">
                                 <label>From</label>
@@ -85,9 +85,9 @@
             </b-modal>
         </b-navbar>
         <jobcreator></jobcreator>
-        <job-item v-if="jobs" v-for="job in jobsSorted" :job="job" :key="job.jid">
+        <job-item v-if="jobs.length > 0" v-for="job in filteredJobs" :job="job" :key="job.jid">
         </job-item>
-        <b-alert variant="warning" v-if="jobsSorted.length == 0 && this.jobs.length != 0" show>
+        <b-alert variant="warning" v-if="filteredJobs.length == 0 && this.jobs.length != 0" show>
             <p>No jobs found based on your filters. Try opening our filter list and removing more filters.</p>
             <i class="fa fa-frown"></i>
         </b-alert>
@@ -120,6 +120,8 @@ export default {
     methods: {
         loadJobs: function() {
             if(this.state.auth.status == false){console.log('Not Connected to API'); return false}
+            if(this.refreshLock == true){console.log("Waiting on query");return false}
+            this.refreshLock = true
             // API CALL
             axios.post('https://' + this.state.auth.server + 
                 ':' + this.state.auth.port + '/', {
@@ -141,52 +143,63 @@ export default {
                 }
                         })
                     .then((response) => {
-                        if (response['data']['return'] == undefined){console.debug('Invaild return for job data');return false}
+                        if (response['data']['return'] == undefined){console.debug('Invalid return for job data');return false}
                         var query = response['data']['return'][0]
                         // Create array from dat
                         this.jobs = []
                         for (var jid in query){
-                            this.jobs.push({'jid': jid, 'properties': query[jid]})
+                            if (this.jobs.length > 0){
+                                if (!this.jidInventory.includes(jid)){
+                                    this.jobs.push({'jid':jid, 'properties': query[jid]})
+                                }
+                            }
+                            else {
+                                this.jobs.push({'jid': jid, 'properties': query[jid]})
+                            }
+                            
                         }
                         console.debug("Loaded job data from server")
                         localStorage.setItem('jobs', JSON.stringify(this.jobs))
+                        this.filterJobs()
+                        this.refreshLock = false
                     })
                     .catch((error) => {
                     console.error(error)
+                    this.refreshLock = false
                 })
         },
         toggleSort: function(selection) {
             if (selection == 'function') { 
-                if (this.sort == 'functionSortUp'){ this.sort = 'functionSortDown'; return }
+                if (this.sort == 'functionSortUp'){ this.sort = 'functionSortDown';  }
                 else {
                     this.sort = 'functionSortUp'
                 }
             }
             if (selection == 'start') {
-                if (this.sort == 'startSortUp'){ this.sort = 'startSortDown'; return}
+                if (this.sort == 'startSortUp'){ this.sort = 'startSortDown'; }
                 else{
                     this.sort = 'startSortUp'
                 }
             }
             if (selection == 'end') {
-                if (this.sort == 'endSortUp'){ this.sort = 'endSortDown'; return}
+                if (this.sort == 'endSortUp'){ this.sort = 'endSortDown'; }
                 else{
                     this.sort = 'endSortUp'
                 }
             }
             if (selection == 'result') {
-                if (this.sort == 'resultSortUp'){ this.sort = 'resultSortDown'; return}
+                if (this.sort == 'resultSortUp'){ this.sort = 'resultSortDown'; }
                 else{
                     this.sort = 'resultSortUp'
                 }
             }
             if (selection == 'target') {
-                if (this.sort == 'targetSortUp'){ this.sort = 'targetSortDown'; return}
+                if (this.sort == 'targetSortUp'){ this.sort = 'targetSortDown'; }
                 else{
                     this.sort = 'targetSortUp'
                 }
             }
-
+            this.filterJobs()
         },
         initView: function() {
             if (localStorage.getItem('jobs') ){
@@ -200,188 +213,60 @@ export default {
         addFilter: function() {
             // If not enough info return right away
             if(this.filterMenu['type'] == "Choose filter type" || 
-               this.filterMenu['text'].length == 0)
+               this.filterMenu['value'].length == 0)
             {    
                 this.filterMenu.variant = "danger"; return false
             }
             // Add filter to list
             if(this.filterMenu['type'] != "Daterange"){
-                console.debug('Pushing filter' + this.filterMenu.text)
+                console.debug('Pushing filter' + this.filterMenu.value)
                 this.filters.push({
                     'type':     this.filterMenu['type'],
-                    'string':   this.filterMenu['text'],
+                    'value':   this.filterMenu['value'],
                     'action':   this.filterMenu['action']})
                 this.filterMenu.variant = "success"
             }
             if (this.filterMenu.action == 'Daterange'){
-                this.filterMenu.daterange.set = !this.filterMenu.daterange.set
             }
             
-        }
-    },
-    data() {
-        return {
-            state: this.$root.sharedState.state,
-            timer: '',
-            jid: null,
-            jobs: [],
-            sort: 'functionSortUp',
-            filters: [],
-            filterMenu: {
-                "type": "Choose filter type", 
-                "text": "",
-                "daterange": {
-                    "from": {
-                        "date": new Date(Date.now() - 86400000).toISOString().slice(0,10),
-                        "time": new Date(Date.now() - 86400000).toTimeString().slice(0,8)
-                    },
-                    "to": {
-                        "date": new Date(Date.now()).toISOString().slice(0,10),
-                        "time": new Date().toTimeString().slice(0,8)
-                    },
-                    "set": false
-                },
-                "action": "Include/Exclude",
-                "variant": "primary",
-            },
-            navSelection: 'Sorts',
-            searchQuery: null,
-            testData: null,
-        }
-    },
-    created() {
-        if(!this.initView()){this.loadJobs()}
-        this.timer = setInterval(this.loadJobs, 40000)
-    },
-    beforeDestroy() {
-        clearInterval(this.timer)
-    },
-    computed: {
-        
-        jobsSorted: function() {
-            
-            var filteredjobs = []
-            var start = new Date( this.filterMenu.daterange['from']['time'] + ' ' + 
-                        this.filterMenu.daterange['from']['date'] )
+        },
+        filterJobs: function () {
+            var staging = []
 
-            var end = new Date(this.filterMenu.daterange['to']['time'] + ' ' +
-                        this.filterMenu.daterange['to']['date'] )
+            console.debug('PreFilter Jobs length ' + this.jobs.length)
 
-            if(start == 'Invalid Date' || end == 'Invalid Date'){console.log('Invalid date range'); return}
-            if (this.filters.length <= 0){console.debug('No filters applied');return this.jobs}
+            for (var fi in this.filters){
 
-            for (var job in this.jobs){
-                var jobstart = new Date(this.jobs[job]['properties']['StartTime'])
-                var jobend = new Date(this.jobs[job]['properties']['StartTime'])
-                if(jobstart == 'Invalid Date'){console.debug(job.jid = 'Had invalid date'); continue}
-                if(jobend == 'Invalid Date'){console.debug(job.jid = 'Had invalid date'); continue}
-                // Skip jobs outside of our desired date range
-                if (jobstart <= start){
-                    console.debug("Job occurs before start range")
-                    continue 
-                }
-                if (jobend >= end){
-                    console.debug("Job occurs after end range")
-                    continue 
-                }
-                // Start applying filters
-                for (var filter in this.filters){
-                    // Skip datefilters as they've already been applied
-                    // Functions && Targets matching a string
-                    var jobFunction = this.jobs[job]['properties'][this.filters[filter]['type']]
-                    console.debug(jobFunction)
-                    if (jobFunction.includes(filter['string'])){
-                        console.debug('Job ' + job.jid + ' passed filter ' + filter.type + filter.string)
-                        filteredjobs.push(job)
-                    }
+                if (this.filters[fi].type == 'Daterange'){
+                    continue
                 }
 
+                if (this.filters[fi].action == 'Include'){
+                    console.debug("Processing include filter " + this.filters[fi].value)
+                    this.jobs.forEach(function (job, ji) {
+                        if (job.properties[this.filters[fi].type].includes(this.filters[fi].value)){
+                            staging.add(this.jobs[ji])
+                        }
+                    }); 
+                }
+                
+                if (this.filters[fi].action == 'Exclude'){
+                    console.debug("Processing exclude filter " + this.filters[fi].value)
+                    staging.forEach(function (job, ji) {
+                        if (job.properties[this.filters[fi].type].includes(this.filters[fi].value)){
+                            staging.splice(ji, 1)
+                        }
+                    });
+                }
             }
-            console.debug('Exiting initial loop')
 
-        //   // #### FILTER LOGIC ####
-        //     if(this.filters.length > 0){
-        //         // Copy the jobs requested from server
-        //         var unfilteredJobData = this.jobs
-        //         var targets = []
-        //         var funs = []
-        //         var datetime = {
-        //             'start': new Date(Date.now() - 36000000,),
-        //             'end': new Date()
-        //             }
-        //         // Pull our selected targets from menu object
-        //         for (var filter in this.filters) {
-        //            // If this isn't a target filter skip
-        //             if (this.filters[filter].type != 'Target'){ continue }
-        //             // If it is see if it has already been added
-        //             if ( (!targets.includes(this.filters[filter].string) && (this.filters[filter].behavior === 'Include')  )){
-        //                 console.debug(this.filters[filter].behavior)
-        //                 targets.push(this.filters[filter].string)
-        //             }
-        //         }   
-        //         console.debug('Targets: ' + targets.length)
+            console.debug('Exiting filter loop')
+            console.debug(staging.length)
 
-        //         // Pull our selected functions from menu object 
-        //         for (var filter in this.filters) {
-        //             if (this.filters[filter].type != 'Function'){ continue }
-        //             if ( (!funs.includes(this.filters[filter].string)  && (this.filters[filter].behavior === 'Include')     )){
-        //                 funs.push(this.filters[filter].string)
-        //             }
-        //         }
-        //         console.debug('Functions: ' + funs.length)
-
-        //         // Get earliest datetime and latest datetime assign to end result range
-        //         for (var filter in this.filters) {
-        //             if (this.filters[filter].type != 'Datetime'){ continue }
-        //             try{ var newdate = new Date(this.filters[filter].string) }
-        //             catch(err) {
-        //                 console.debug(err)
-        //                 continue
-        //             }
-        //             if (newdate < datetime.start) {
-        //                 datetime.start = newdate
-        //             }
-        //             if (newdate > datetime.end) {
-        //                 datetime.end = newdate
-        //             }
-        //         }
-        //         // Start by removing jobs that do not have the selected targets
-        //         var filteredjobs = []
-        //         for (var jobnum in unfilteredJobData){
-        //             // If targets do not match skip adding to results
-        //             if (!targets.includes(unfilteredJobData[jobnum].properties.Target)){
-        //                 // If there aren't any function selectors then move on
-        //                 if (targets.length > 0){
-        //                     console.debug('Filtered because of targets')
-        //                     continue 
-        //                 }
-        //             }
-        //             // If functions do not match skip adding to results
-        //             if (!funs.includes(unfilteredJobData[jobnum].properties.Function)){
-        //                 // If there aren't any function selectors then move on
-        //                 if (funs.length > 0) { 
-        //                     console.debug(unfilteredJobData[jobnum].properties.Function)
-        //                     console.debug('Filtered because of function')
-        //                     continue 
-        //                 }
-        //             }
-        //             // If start time is before range or after range skip adding to results
-        //             if (unfilteredJobData[jobnum].properties.StartTime < datetime.start || 
-        //                 unfilteredJobData[jobnum].properties.StartTime > datetime.end){
-        //                 console.debug('Filtered because of date')
-        //                 continue
-        //             }
-        //             filteredjobs.push(unfilteredJobData[jobnum])
-        //         }
-
-        //         }
-            // else {
-            //     filteredjobs = this.jobs
-            // }
-
+       
             // #### SORT LOGIC 
             if (this.sort == 'functionSortUp'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.Function < b.properties.Function) return 1;
                     if(a.properties.Function > b.properties.Function) return -1;
                     return 0; 
@@ -389,7 +274,7 @@ export default {
                 )
             }
             if (this.sort == 'functionSortDown'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = jobs.sort(function(a,b) {
                     if(a.properties.Function > b.properties.Function) return 1;
                     if(a.properties.Function < b.properties.Function) return -1;
                     return 0; 
@@ -397,36 +282,73 @@ export default {
                 
             }
             if (this.sort == 'startSortUp'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = jobs.sort(function(a,b) {
                     if(a.properties.StartTime < b.properties.StartTime) return 1;
                     if(a.properties.StartTime > b.properties.StartTime) return -1;
                     return 0; 
                     })
             }
             if (this.sort == 'startSortDown'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = jobs.sort(function(a,b) {
                     if(a.properties.StartTime > b.properties.StartTime) return 1;
                     if(a.properties.StartTime < b.properties.StartTime) return -1;
                     return 0; 
                     })
             }
             if (this.sort == 'targetSortUp'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = jobs.sort(function(a,b) {
                     if(a.properties.Target < b.properties.Target) return 1;
                     if(a.properties.Target > b.properties.Target) return -1;
                     return 0; 
                 })
             }
             if (this.sort == 'targetSortDown'){
-                return filteredjobs.sort(function(a,b) {
+                this.filteredJobs = jobs.sort(function(a,b) {
                     if(a.properties.Target > b.properties.Target) return 1;
                     if(a.properties.Target < b.properties.Target) return -1;
                     return 0; 
                     })
             }
-            
         }
-    }
+    },
+    data() {
+        return {
+            state: this.$root.sharedState.state,
+            timer: '',
+            jobs: [],
+            filteredJobs: [],
+            sort: 'functionSortUp',
+            filters: [
+                {"type":"Function","value":"runner.jobs.list_jobs","action":"Exclude"}
+            ],
+            filterMenu: {
+                "type": "Choose filter type", 
+                "value": null,
+                "action": "Include/Exclude",
+                "variant": "primary",
+            },
+            navSelection: 'Sorts',
+            refreshLock: false,
+        }
+    },
+    created() {
+        if(!this.initView()){this.loadJobs()}
+        this.filterJobs()
+        this.timer = setInterval(this.loadJobs, 40000)
+    },
+    beforeDestroy() {
+        clearInterval(this.timer)
+    },
+    computed: {
+        jidInventory: function () {
+            if(this.jobs.length <= 0){ return }
+            var jids = []
+            this.jobs.forEach( function(job, index) {
+                jids.push(job.jid)
+            })
+            return jids
+        }
+    },
 }
 
 </script>
