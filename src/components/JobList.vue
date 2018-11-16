@@ -40,6 +40,13 @@
             </b-collapse>
             <!-- Filters Modal Menu -->
             <b-modal id="filterModal" title="Filters Menu">
+                    <strong>Job Window</strong>
+                    <b-form-group>
+                        From
+                        <datepicker v-model="timeWindow.from" :bootstrap-styling="true"></datepicker>
+                        To
+                        <datepicker v-model="timeWindow.to" :bootstrap-styling="true"></datepicker>
+                    </b-form-group>
                     <strong>Applied:</strong>
                     <ul>
                         <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
@@ -54,6 +61,7 @@
                     </ul>
                         <strong>Add:</strong><br>
                         <b-form-group>
+                            
                             <b-dropdown :text="filterMenu.type">
                                 <b-dropdown-item @click="filterMenu.type = 'Function'">Function</b-dropdown-item>
                                 <b-dropdown-item @click="filterMenu.type = 'Target'">Target</b-dropdown-item>
@@ -63,22 +71,7 @@
                             <b-input v-if="!(filterMenu.type == 'Daterange')" 
                                     placeholder="String" v-model="filterMenu.value">
                             </b-input>
-                            <b-form-group v-if="filterMenu.type == 'Daterange'">
-                                <label>From</label>
-                                <b-input :placeholder="new Date().toLocaleString()"></b-input>
-                                <label>To</label>
-                                <b-input :placeholder="new Date(
-                                    new Date().setHours(
-                                        new Date().getHours()-8
-                                        ) 
-                                    ).toLocaleString()">
-                                </b-input>
-
-                            </b-form-group>
-                            <b-dropdown :text="filterMenu.action">
-                                <b-dropdown-item @click="filterMenu.action = 'Include'">Include</b-dropdown-item>
-                                <b-dropdown-item @click="filterMenu.action = 'Exclude'">Exclude</b-dropdown-item>
-                            </b-dropdown>
+                            
                             <b-btn :variant="this.filterMenu.variant" @click="addFilter">Add</b-btn>
 
                         </b-form-group>
@@ -104,6 +97,7 @@
 
 <script>
 import axios from 'axios'
+import Datepicker from 'vuejs-datepicker'
 import JobItem from './JobItem.vue'
 import Spinner from './Spinner.vue'
 import JobCreator from './Jobs/JobCreator.vue'
@@ -115,7 +109,8 @@ export default {
     components: {
         'job-item': JobItem,
         'jobcreator': JobCreator,
-        'spinner': Spinner
+        'spinner': Spinner,
+        'datepicker': Datepicker
     },
     methods: {
         loadJobs: function() {
@@ -127,14 +122,8 @@ export default {
                 ':' + this.state.auth.port + '/', {
                     client: "runner",
                     fun: "jobs.list_jobs",
-                    start_time: (
-                        (
-                            new Date(
-                                Date.now() - (3600 * 1000)
-                                )
-                        ) 
-                    
-                        ).toLocaleString()
+                    start_time: this.timeWindow.from.toLocaleString(),
+                    end_time: this.timeWindow.to.toLocaleString()
                 },{
                 headers: {
                     'x-auth-token': this.state.auth.token,
@@ -231,32 +220,18 @@ export default {
             
         },
         filterJobs: function () {
-            var staging = []
+            var staging = this.jobs
 
             console.debug('PreFilter Jobs length ' + this.jobs.length)
 
             for (var fi in this.filters){
-
-                if (this.filters[fi].type == 'Daterange'){
-                    continue
-                }
-
-                if (this.filters[fi].action == 'Include'){
-                    console.debug("Processing include filter " + this.filters[fi].value)
-                    this.jobs.forEach(function (job, ji) {
-                        if (job.properties[this.filters[fi].type].includes(this.filters[fi].value)){
-                            staging.add(this.jobs[ji])
-                        }
-                    }); 
-                }
-                
-                if (this.filters[fi].action == 'Exclude'){
-                    console.debug("Processing exclude filter " + this.filters[fi].value)
-                    staging.forEach(function (job, ji) {
-                        if (job.properties[this.filters[fi].type].includes(this.filters[fi].value)){
-                            staging.splice(ji, 1)
-                        }
-                    });
+               
+                console.debug("Processing exclude filter " + this.filters[fi].value)
+                for (var j in staging){
+                    // If you match the filter you get ignored
+                   if (staging[j].properties[this.filters[fi].type].includes(this.filters[fi].value)){
+                       staging.splice(j,1)
+                   } 
                 }
             }
 
@@ -274,7 +249,7 @@ export default {
                 )
             }
             if (this.sort == 'functionSortDown'){
-                this.filteredJobs = jobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.Function > b.properties.Function) return 1;
                     if(a.properties.Function < b.properties.Function) return -1;
                     return 0; 
@@ -282,28 +257,28 @@ export default {
                 
             }
             if (this.sort == 'startSortUp'){
-                this.filteredJobs = jobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.StartTime < b.properties.StartTime) return 1;
                     if(a.properties.StartTime > b.properties.StartTime) return -1;
                     return 0; 
                     })
             }
             if (this.sort == 'startSortDown'){
-                this.filteredJobs = jobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.StartTime > b.properties.StartTime) return 1;
                     if(a.properties.StartTime < b.properties.StartTime) return -1;
                     return 0; 
                     })
             }
             if (this.sort == 'targetSortUp'){
-                this.filteredJobs = jobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.Target < b.properties.Target) return 1;
                     if(a.properties.Target > b.properties.Target) return -1;
                     return 0; 
                 })
             }
             if (this.sort == 'targetSortDown'){
-                this.filteredJobs = jobs.sort(function(a,b) {
+                this.filteredJobs = staging.sort(function(a,b) {
                     if(a.properties.Target > b.properties.Target) return 1;
                     if(a.properties.Target < b.properties.Target) return -1;
                     return 0; 
@@ -319,8 +294,12 @@ export default {
             filteredJobs: [],
             sort: 'functionSortUp',
             filters: [
-                {"type":"Function","value":"runner.jobs.list_jobs","action":"Exclude"}
+                {"type":"Function","value":"runner.jobs.list_jobs"}
             ],
+            timeWindow: {
+                'from': new Date(Date.now() - 86400000),
+                'to': new Date(Date.now())
+            },
             filterMenu: {
                 "type": "Choose filter type", 
                 "value": null,
@@ -347,7 +326,7 @@ export default {
                 jids.push(job.jid)
             })
             return jids
-        }
+        },
     },
 }
 
@@ -380,6 +359,13 @@ export default {
 #collapseNewFilterButton{
     width:100%;
     border-radius: 0;
+}
+.validate-success{
+    border-color: rgb(103, 165, 103);
+}
+
+.validate-fail{
+    border-color: red;
 }
 
 </style>
