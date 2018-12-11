@@ -292,7 +292,7 @@ export default {
             timer: '',
             jobs: [],
             filteredJobs: [],
-            sort: 'functionSortUp',
+            sort: 'startSortUp',
             filters: [
                 {"type":"Function","value":"runner.jobs.list_jobs"}
             ],

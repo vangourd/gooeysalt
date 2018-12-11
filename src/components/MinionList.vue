@@ -58,7 +58,7 @@
                 <b-col cols="2">
                     <b-btn class="fa fa-terminal" variant="light" :href="'ssh://' + minion.properties.fqdn"></b-btn>
                     <b-btn class="fa fa-desktop" variant="light" :href="'rdp://' + minion.properties.fqdn"></b-btn> <br>
-                    <b-btn class="fa fa-link" variant="light" :href="'https://' + minion.properties.fqdn"></b-btn>
+                    <b-btn class="fa fa-link" variant="light" target="_blank" :href="'http://' + minion.properties.fqdn"></b-btn>
                     <b-btn class="fa fa-tasks" variant="light"></b-btn>
                 </b-col>
             </b-row>
@@ -162,7 +162,7 @@ export default {
             console.debug('launching startGrainsItems')
             axios.post('https://' + this.state.auth.server + 
                 ':' + this.state.auth.port + '/', {
-                    client: "local",
+                    client: "local_async",
                     tgt: "*",
                     fun: "grains.items"
                 },{
@@ -174,6 +174,8 @@ export default {
                     })
                 .then((response) => {
                     if (response.status == 200) {
+                        console.debug('Async submission')
+                        console.debug(response)
                         this.apilimit = Date.now() 
                         return true
                     } 
