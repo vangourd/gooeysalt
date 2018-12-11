@@ -7,7 +7,9 @@
             <i class="fa fa-plus"></i>
         </b-btn>
         <b-collapse id="collapseCreateJob">
-            <strong>Create new job</strong>
+            <strong>Create new job</strong><br>
+            <a target="_blank" href="https://docs.saltstack.com/en/latest/topics/execution/remote_execution.html">Tutorial </a>
+            <a target="_blank" href="https://docs.saltstack.com/en/latest/ref/modules/all/">List of commands</a>
             <b-form-group>
                 <b-form-input v-model="jobInput" placeholder="Enter your command here"></b-form-input>
                 <b-form-text v-if="stagedJob.data.client">Type: {{ stagedJob.data.client}}</b-form-text>
