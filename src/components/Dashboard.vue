@@ -12,7 +12,7 @@
 
 <script>
 import StatusBar from './StatusBar.vue'
-import JobList from './JobList.vue'
+import JobList from './Jobs/JobList.vue'
 import ActionBar from './ActionBar.vue'
 import MinionList from './MinionList.vue'
 import Reports from './Reports.vue'

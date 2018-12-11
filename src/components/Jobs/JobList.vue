@@ -99,8 +99,8 @@
 import axios from 'axios'
 import Datepicker from 'vuejs-datepicker'
 import JobItem from './JobItem.vue'
-import Spinner from './Spinner.vue'
-import JobCreator from './Jobs/JobCreator.vue'
+import Spinner from '../Spinner.vue'
+import JobCreator from './JobCreator.vue'
 
 
 export default {

@@ -39,7 +39,7 @@
 
 <script>
 import axios from 'axios'
-import Spinner from './Spinner.vue'
+import Spinner from '../Spinner.vue'
 
 export default {
     name: 'JobDetail',
