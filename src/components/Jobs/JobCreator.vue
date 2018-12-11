@@ -52,7 +52,7 @@ export default {
                     command.shift()
                 }
                 else {
-                    data.client = 'local'
+                    data.client = 'local_async'
                 }
                 if (command.length > 2){
                     data.arg = command.splice(2)
@@ -85,9 +85,10 @@ export default {
                         'accept': 'application/json'
                     }
                             })
-                    .then(() => {
+                    .then((response) => {
                         this.jobStatus.text = "Job Submitted"
                         this.jobStatus.variant = 'success'
+                        this.$emit('submitted',response.data.return[0].jid)
                         console.debug('That thing to do after the post was sent')
                     })
                     .catch((err) => {

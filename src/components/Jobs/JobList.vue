@@ -34,7 +34,11 @@
                         'fa-bullseye': !this.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-                <b-nav-item @click="loadJobs"><i class="fa fa-undo"></i> Refresh</b-nav-item>
+                <b-nav-item @click="loadJobs">
+                    <i class="fa fa-undo" v-if="!refreshLock "></i> 
+                    <i class="fa fa-spinner" v-if="refreshLock"></i>
+                    Refresh
+                </b-nav-item>
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
             </b-navbar-nav>
             </b-collapse>
@@ -77,7 +81,9 @@
                         </b-form-group>
             </b-modal>
         </b-navbar>
-        <jobcreator></jobcreator>
+        <jobcreator @submitted="onSubmit" @returned="onReturn"></jobcreator>
+        <job-pending v-if="pending.length > 0" v-for="(jid, index) in pending" :jid="jid" :key="index">
+        </job-pending>
         <job-item v-if="jobs.length > 0" v-for="job in filteredJobs" :job="job" :key="job.jid">
         </job-item>
         <b-alert variant="warning" v-if="filteredJobs.length == 0 && this.jobs.length != 0" show>
@@ -99,6 +105,7 @@
 import axios from 'axios'
 import Datepicker from 'vuejs-datepicker'
 import JobItem from './JobItem.vue'
+import JobPending from './JobPending.vue'
 import Spinner from '../Spinner.vue'
 import JobCreator from './JobCreator.vue'
 
@@ -108,6 +115,7 @@ export default {
     name: 'joblist',
     components: {
         'job-item': JobItem,
+        'job-pending': JobPending,
         'jobcreator': JobCreator,
         'spinner': Spinner,
         'datepicker': Datepicker
@@ -284,6 +292,16 @@ export default {
                     return 0; 
                     })
             }
+        },
+        onSubmit: function(jid) {
+            this.loadJobs()
+            // Create job element
+            // Set the progress bar, jid, targets, function etc
+            // query progress/status
+        },
+        onReturn: function(value) {
+            // Show green checkmark and disappear from regular list
+            // Refresh job list
         }
     },
     data() {
@@ -291,6 +309,7 @@ export default {
             state: this.$root.sharedState.state,
             timer: '',
             jobs: [],
+            pending: [],
             filteredJobs: [],
             sort: 'startSortUp',
             filters: [
