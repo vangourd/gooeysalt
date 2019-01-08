@@ -54,6 +54,8 @@ var store = {
     this.state.auth.message = "Connected to " + this.state.auth.server +
                                   ' as ' + this.state.auth.username
     this.state.auth.variant = 'success'
+    this.state.auth.url = 'https://' + this.state.auth.server + 
+                          ':' + this.state.auth.port +'/'
     this.state.auth.short_message = "Connected"
     localStorage.setItem('auth', JSON.stringify(this.state.auth))
   },
