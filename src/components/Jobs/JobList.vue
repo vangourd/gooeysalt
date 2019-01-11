@@ -34,7 +34,7 @@
                         'fa-bullseye': !this.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-                <b-nav-item @click="loadJobs">
+                <b-nav-item @click="loadJobsFromServer">
                     <i class="fa fa-undo" v-if="!refreshLock "></i> 
                     <i class="fa fa-spinner" v-if="refreshLock"></i>
                     Refresh
@@ -121,7 +121,7 @@ export default {
         'datepicker': Datepicker
     },
     methods: {
-        loadJobs: function() {
+        loadJobsFromServer: function() {
             if(this.state.auth.status == false){console.log('Not Connected to API'); return false}
             if(this.refreshLock == true){console.log("Waiting on query");return false}
             this.refreshLock = true
@@ -165,6 +165,15 @@ export default {
                     this.refreshLock = false
                 })
         },
+        loadJobsFromStorage: function() {
+            if (localStorage.getItem('jobs') ){
+                console.debug("Job data loaded from cache")
+                this.jobs = JSON.parse(localStorage.getItem('jobs'))
+                this.filterJobs()
+                return true
+            }
+            else return false
+        },
         toggleSort: function(selection) {
             if (selection == 'function') { 
                 if (this.sort == 'functionSortUp'){ this.sort = 'functionSortDown';  }
@@ -197,15 +206,6 @@ export default {
                 }
             }
             this.filterJobs()
-        },
-        initView: function() {
-            if (localStorage.getItem('jobs') ){
-                this.jobs = JSON.parse(localStorage.getItem('jobs'))
-                console.debug("Job data loaded from cache")
-                return true
-            }
-            else return false
-            console.debug("FAIL Job data not loaded from cache")
         },
         addFilter: function() {
             // If not enough info return right away
@@ -294,7 +294,7 @@ export default {
             }
         },
         onSubmit: function(jid) {
-            this.loadJobs()
+            this.loadJobsFromServer()
             // Create job element
             // Set the progress bar, jid, targets, function etc
             // query progress/status
@@ -330,8 +330,7 @@ export default {
         }
     },
     created() {
-        if(!this.initView()){this.loadJobs()}
-        this.filterJobs()
+        if(!this.loadJobsFromStorage()){this.loadJobsFromServer()}
         this.timer = setInterval(this.loadJobs, 40000)
     },
     beforeDestroy() {
