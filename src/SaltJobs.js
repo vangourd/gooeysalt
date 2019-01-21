@@ -1,3 +1,4 @@
+import axios from 'axios'
 import SaltClient from './SaltClient.js'
 
 export default class SaltJobs extends SaltClient {
@@ -58,5 +59,104 @@ export default class SaltJobs extends SaltClient {
                     return jobs
                 }
             }
+        this.jobs = {
+
+            list_jobs: (start_time,end_time,onSuccess,onFailure) => {
+                axios.post('https://' + this.auth.server + 
+                    ':' + this.auth.port + '/',{
+                    client: "runner",
+                    fun: "jobs.list_jobs",
+                    start_time: start_time,
+                    end_time: end_time,
+                    },
+                    {headers: {
+                            'x-auth-token': this.auth.token,
+                            'content-type': 'application/json',
+                            'accept': 'application/json'
+                        }
+                    })
+                .then((response) => {
+                    this.handleServerErrorResponse(response)
+                    var jobsArray = this.jobs.list_jobs_array(response)
+                    onSuccess(jobsArray)
+                })
+                .catch((err) => {
+                    console.debug(err)
+                    onFailure()
+                })
+            },
+            list_jobs_array: (response) => {
+                var query = response['data']['return'][0]
+                var jobsArray = []
+                for (var jid in query){
+                    jobsArray.push({'jid':jid,'properties': query[jid]})
+                }
+                return jobsArray
+            },
+            active_jobs_array: (onSuccess, onFailure) => {
+                axios.post('https://' + this.auth.server + 
+                    ':' + this.auth.port + '/',{
+                    client: "runner",
+                    fun: "jobs.active",
+                    },
+                    {headers: {
+                            'x-auth-token': this.auth.token,
+                            'content-type': 'application/json',
+                            'accept': 'application/json'
+                        }
+                    })
+                .then((response) => {
+                    this.handleServerErrorResponse(response)
+                    var query = response['data']['return'][0]
+                    var jobsArray = []
+                    for (var jid in query){
+                        jobsArray.push({'jid':jid,'properties': query[jid]})
+                    }
+                    onSuccess(jobsArray)
+                })
+                .catch((err) => {
+                    console.debug(err)
+                    onFailure()
+                })
+            },
+
+            getJobsInLastFiveMinutes: (onSuccess,onFailure) => {
+                var start_time = new Date(Date.now() - 300000)
+                var end_time = new Date(Date.now())
+                var start_time = start_time.toLocaleString()
+                var end_time = end_time.toLocaleString()
+                this.jobs.list_jobs(start_time,end_time,onSuccess,onFailure)
+            },
+            getJobsInLastFourHours: (onSuccess,onFailure) => {
+                var start_time = new Date(Date.now() - 14400000)
+                var end_time = new Date(Date.now())
+                var start_time = start_time.toLocaleString()
+                var end_time = end_time.toLocaleString()
+                this.jobs.list_jobs(start_time,end_time,onSuccess,onFailure)
+            },
+            getActiveJobs: (onSuccess, onFailure) => {
+                this.jobs.active_jobs_array(onSuccess,onFailure)
+            },
+            joinJobData: function(lookupTable,newJobs) {
+                if(typeof(lookupTable) === 'undefined'){throw "Missing [0:Array of jid's] parameter"}
+                if(typeof(newJobs) === 'undefined'){throw "Missing [1: New data to merge'] parameter"}
+                for(var index in newJobs){
+                    if(!lookupTable.includes(newJobs[index].jid)){
+                        lookupTable.push(newJobs[index].jid)
+                    }
+                }
+                return lookupTable
+            }
+
+        }
+        this.activeJobs = {
+            waitingOnResponse: false,
+            data: [],
+            get: (onSuccess, onFailure) => {
+                this.jobs.active_jobs_array(onSuccess,onFailure)
+            }
+        }
+
+
     }
 } 

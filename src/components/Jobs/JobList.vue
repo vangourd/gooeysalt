@@ -190,7 +190,7 @@ export default {
             if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
             this.refreshLock = true
 
-            this.salt.jobs.getActiveJobs(onAJSuccess,onFailure)
+            this.saltjobs.getActiveJobs(onAJSuccess,onFailure)
 
         },
         loadJobsFromServer: function(){
@@ -208,10 +208,11 @@ export default {
             }
 
             if(!this.connectedToApi()){throw "Not connected to API"}
+            // TODO: Move this into SaltJobs class logic
             if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
             this.refreshLock = true
         
-            this.salt.jobs.getJobsInLastFourHours(onSuccess,onFailure)
+            this.saltjobs.jobs.getJobsInLastFourHours(onSuccess,onFailure)
  
         },
         autoUpdate(){
