@@ -102,6 +102,7 @@ import JobPending from './JobPending.vue'
 import Spinner from '../Spinner.vue'
 import JobCreator from './JobCreator.vue'
 import SaltClient from '../../SaltClient.js'
+import SaltJobs from '../../SaltJobs.js'
 
 
 export default {
@@ -144,12 +145,14 @@ export default {
             navSelection: 'Sorts',
             refreshLock: false,
             test: null,
-            salt: null
+            salt: null,
+            saltjobs: null
         }
     },
     created() {
         if(this.connectedToApi()){
             this.salt = new SaltClient(this.state.auth)
+            this.saltjobs = new SaltJobs(this.state.auth)
             if(!this.loadJobsFromStorage()) {
                 console.debug("No local storage data. Querying server...")
                 this.autoUpdate()
@@ -192,9 +195,7 @@ export default {
         },
         loadJobsFromServer: function(){
 
-            // TODO: Response parsing needs to be abstracted into Salt Class
             var onSuccess = (jobsArray) => {
-                // TODO: pulling out the right data field should be handled by library
                 // TODO: Use a job merge function instead of wiping the array
                 localStorage.setItem('jobs', JSON.stringify(jobsArray))
                 this.jobs.completed = jobsArray
@@ -228,31 +229,31 @@ export default {
 
             if(this.actionBar.sort === 'functionUp'){
                 this.actionBar.sort = 'functionDown'
-                this.jobs.completed =  this.salt.jobs.sort.functionDown(this.jobs.completed)
+                this.jobs.completed =  this.saltjobs.sort.functionDown(this.jobs.completed)
             }
             else{
                 this.actionBar.sort = 'functionUp'
-                this.jobs.completed = this.salt.jobs.sort.functionUp(this.jobs.completed)
+                this.jobs.completed = this.saltjobs.sort.functionUp(this.jobs.completed)
             }
         },
         sortByStart () {
             if(this.actionBar.sort === 'startUp'){
                 this.actionBar.sort = 'startDown'
-                this.jobs.completed = this.salt.jobs.sort.startUp(this.jobs.completed)
+                this.jobs.completed = this.saltjobs.sort.startUp(this.jobs.completed)
             }
             else{
                 this.actionBar.sort = 'startUp'
-                this.jobs.completed = this.salt.jobs.sort.startDown(this.jobs.completed)
+                this.jobs.completed = this.saltjobs.sort.startDown(this.jobs.completed)
             }
         },
         sortByTarget () {
             if(this.actionBar.sort === 'targetUp'){
                 this.actionBar.sort = 'targetDown'
-                this.jobs.completed = this.salt.jobs.sort.targetUp(this.jobs.completed)
+                this.jobs.completed = this.saltjobs.sort.targetUp(this.jobs.completed)
             }
             else{
                 this.actionBar.sort = 'targetUp'
-                this.jobs.completed = this.salt.jobs.sort.targetDown(this.jobs.completed)
+                this.jobs.completed = this.saltjobs.sort.targetDown(this.jobs.completed)
             }
         },
         
