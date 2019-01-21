@@ -2,9 +2,9 @@
     <b-card class="job-card" >
         <b-row>
             <b-col cols="10">
-                    <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }} by <i class="fa fa-user"></i> {{ job.properties.User }}
+                    <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }}
                     <p class="small text-secondary">
-                        {{ job.properties.StartTime }} <br>
+                        by <i class="fa fa-user"></i> {{ job.properties.User }} {{ job.properties.StartTime }} <br>
                         Minions at task: {{ job.properties.Running.length }}
                         Minions returned: {{ job.properties.Returned.length }} <br>
                     </p>
