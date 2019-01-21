@@ -1,40 +1,39 @@
 <template>
     <b-col id="joblist">
-        <b-navbar toggleable="sm" type="dark" variant="dark">
+        <b-navbar id="jobsActionBar" toggleable="sm" type="dark" variant="dark">
             <b-navbar-toggle target="jobs_collapse"></b-navbar-toggle>
             <b-navbar-brand class="fa fa-tasks"> Jobs</b-navbar-brand>
             <b-collapse is-nav id="jobs_collapse">
-            <b-navbar-nav >
-                <!-- Jobs Action Bar -->
-                <b-nav-item @click="toggleSort('function')">
+            <b-navbar-nav>
+                <b-nav-item @click="sortByFunction()">
                     <i class="fa" :class="{
-                        'fa-sort-up': this.sort == 'functionSortUp',
-                        'fa-sort-down': this.sort == 'functionSortDown',
-                        'fa-wrench': !this.sort.includes('function')
+                        'fa-sort-up': this.actionBar.sort == 'functionUp',
+                        'fa-sort-down': this.actionBar.sort == 'functionDown',
+                        'fa-wrench': !this.actionBar.sort.includes('function')
                     }"> Function</i>
                 </b-nav-item>
-                <b-nav-item @click="toggleSort('start')">
+                <b-nav-item @click="sortByStart()">
                     <i class="fa" :class="{
-                        'fa-sort-up': this.sort == 'startSortUp',
-                        'fa-sort-down': this.sort == 'startSortDown',
-                        'fa-clock': !this.sort.includes('start')
+                        'fa-sort-up': this.actionBar.sort == 'startUp',
+                        'fa-sort-down': this.actionBar.sort == 'startDown',
+                        'fa-clock': !this.actionBar.sort.includes('start')
                     }"> Start</i>
                 </b-nav-item>
-                <b-nav-item @click="toggleSort('result')">
+                <b-nav-item>
                     <i class="fa" :class="{
-                        'fa-sort-up': this.sort == 'resultSortUp',
-                        'fa-sort-down': this.sort == 'resultSortDown',
-                        'fa-check': !this.sort.includes('result')
+                        'fa-sort-up': this.actionBar.sort == 'resultUp',
+                        'fa-sort-down': this.actionBar.sort == 'resultDown',
+                        'fa-check': !this.actionBar.sort.includes('result')
                     }"> Result</i>
                 </b-nav-item>
-                <b-nav-item @click="toggleSort('target')">
+                <b-nav-item @click="sortByTarget()">
                     <i class="fa" :class="{
-                        'fa-sort-up': this.sort == 'targetSortUp',
-                        'fa-sort-down': this.sort == 'targetSortDown',
-                        'fa-bullseye': !this.sort.includes('target')
+                        'fa-sort-up': this.actionBar.sort == 'targetUp',
+                        'fa-sort-down': this.actionBar.sort == 'targetDown',
+                        'fa-bullseye': !this.actionBar.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-                <b-nav-item @click="loadJobsFromServer">
+                <b-nav-item @click="autoUpdate">
                     <i class="fa fa-undo" v-if="!refreshLock "></i> 
                     <i class="fa fa-spinner" v-if="refreshLock"></i>
                     Refresh
@@ -81,23 +80,17 @@
                         </b-form-group>
             </b-modal>
         </b-navbar>
-        <jobcreator @submitted="onSubmit" @returned="onReturn"></jobcreator>
-        <job-pending v-if="pending.length > 0" v-for="(jid, index) in pending" :jid="jid" :key="index">
+        <jobcreator></jobcreator>
+        <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
         </job-pending>
-        <job-item v-if="jobs.length > 0" v-for="job in filteredJobs" :job="job" :key="job.jid">
+        <job-item v-if="jobs.completed.length > 0" v-for="job in jobs.completed" :job="job" :key="job.jid">
         </job-item>
-        <b-alert variant="warning" v-if="filteredJobs.length == 0 && this.jobs.length != 0" show>
-            <p>No jobs found based on your filters. Try opening our filter list and removing more filters.</p>
-            <i class="fa fa-frown"></i>
-        </b-alert>
-        <spinner v-if="jobs.length == 0 && this.state.auth.status == true"></spinner>
-        <h2 v-if=" this.state.auth.status == false">
-            You are not authenticated
-            <br>
-            <br>
-            <br>
-
-        </h2>
+        <div id="statusList">
+            <spinner v-if="jobs.completed.length == 0 && this.state.auth.status == true"></spinner>
+            <b-alert id="authWarning" variant="warning" v-if=" this.state.auth.status == false">
+                You are not authenticated
+            </b-alert>
+        </div>
     </b-col>
 </template>
 
@@ -108,6 +101,7 @@ import JobItem from './JobItem.vue'
 import JobPending from './JobPending.vue'
 import Spinner from '../Spinner.vue'
 import JobCreator from './JobCreator.vue'
+import SaltClient from '../../SaltClient.js'
 
 
 export default {
@@ -120,93 +114,148 @@ export default {
         'spinner': Spinner,
         'datepicker': Datepicker
     },
+    data() {
+        return {
+            state: this.$root.sharedState.state,
+            autoRefreshInterval: '',
+            jobs: {
+                'completed': [],
+                'active': [],
+                'lookupTable': [],
+            },
+            actionBar: {
+                sort: "startUp"
+            },
+            filteredJobs: [],
+            sorter: null,
+            filters: [
+                {"type":"Function","value":"runner.jobs.list_jobs"}
+            ],
+            timeWindow: {
+                'from': new Date(Date.now() - 360000 /*86400000*/),
+                'to': new Date(Date.now())
+            },
+            filterMenu: {
+                "type": "Choose filter type", 
+                "value": null,
+                "action": "Include/Exclude",
+                "variant": "primary",
+            },
+            navSelection: 'Sorts',
+            refreshLock: false,
+            test: null,
+            salt: null
+        }
+    },
+    created() {
+        if(this.connectedToApi()){
+            this.salt = new SaltClient(this.state.auth)
+            if(!this.loadJobsFromStorage()) {
+                console.debug("No local storage data. Querying server...")
+                this.autoUpdate()
+            }
+            this.createJobsUpdatePoller()
+        }
+    },
+    beforeDestroy() {
+        clearInterval(this.autoRefreshInterval)
+    },
     methods: {
-        loadJobsFromServer: function() {
-            if(this.state.auth.status == false){console.log('Not Connected to API'); return false}
-            if(this.refreshLock == true){console.log("Waiting on query");return false}
-            this.refreshLock = true
-            // API CALL
-            axios.post('https://' + this.state.auth.server + 
-                ':' + this.state.auth.port + '/', {
-                    client: "runner",
-                    fun: "jobs.list_jobs",
-                    start_time: this.timeWindow.from.toLocaleString(),
-                    end_time: this.timeWindow.to.toLocaleString()
-                },{
-                headers: {
-                    'x-auth-token': this.state.auth.token,
-                    'content-type': 'application/json',
-                    'accept': 'application/json'
-                }
-                        })
-                    .then((response) => {
-                        if (response['data']['return'] == undefined){console.debug('Invalid return for job data');return false}
-                        var query = response['data']['return'][0]
-                        // Create array from dat
-                        this.jobs = []
-                        for (var jid in query){
-                            if (this.jobs.length > 0){
-                                if (!this.jidInventory.includes(jid)){
-                                    this.jobs.push({'jid':jid, 'properties': query[jid]})
-                                }
-                            }
-                            else {
-                                this.jobs.push({'jid': jid, 'properties': query[jid]})
-                            }
-                            
-                        }
-                        console.debug("Loaded job data from server")
-                        localStorage.setItem('jobs', JSON.stringify(this.jobs))
-                        this.filterJobs()
-                        this.refreshLock = false
-                    })
-                    .catch((error) => {
-                    console.error(error)
-                    this.refreshLock = false
-                })
+        connectedToApi(){
+            if(typeof(this.state.auth.status) == 'boolean')
+                return this.state.auth.status
         },
-        loadJobsFromStorage: function() {
+        loadJobsFromStorage: function(){
             if (localStorage.getItem('jobs') ){
                 console.debug("Job data loaded from cache")
-                this.jobs = JSON.parse(localStorage.getItem('jobs'))
-                this.filterJobs()
+                this.jobs.completed = JSON.parse(localStorage.getItem('jobs'))
                 return true
             }
             else return false
         },
-        toggleSort: function(selection) {
-            if (selection == 'function') { 
-                if (this.sort == 'functionSortUp'){ this.sort = 'functionSortDown';  }
-                else {
-                    this.sort = 'functionSortUp'
-                }
+        loadActiveJobsFromServer: function(){
+
+            var onSuccess = (jobsArray) => {
+                this.jobs.active = jobsArray
+                this.refreshLock = false
             }
-            if (selection == 'start') {
-                if (this.sort == 'startSortUp'){ this.sort = 'startSortDown'; }
-                else{
-                    this.sort = 'startSortUp'
-                }
+
+            var onFailure = () =>  {
+                this.refreshLock = false
             }
-            if (selection == 'end') {
-                if (this.sort == 'endSortUp'){ this.sort = 'endSortDown'; }
-                else{
-                    this.sort = 'endSortUp'
-                }
-            }
-            if (selection == 'result') {
-                if (this.sort == 'resultSortUp'){ this.sort = 'resultSortDown'; }
-                else{
-                    this.sort = 'resultSortUp'
-                }
-            }
-            if (selection == 'target') {
-                if (this.sort == 'targetSortUp'){ this.sort = 'targetSortDown'; }
-                else{
-                    this.sort = 'targetSortUp'
-                }
-            }
-            this.filterJobs()
+            if(!this.connectedToApi()){throw "Not connected to API"}
+            if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
+            this.refreshLock = true
+
+            this.salt.jobs.getActiveJobs(onAJSuccess,onFailure)
+
         },
+        loadJobsFromServer: function(){
+
+            // TODO: Response parsing needs to be abstracted into Salt Class
+            var onSuccess = (jobsArray) => {
+                // TODO: pulling out the right data field should be handled by library
+                // TODO: Use a job merge function instead of wiping the array
+                localStorage.setItem('jobs', JSON.stringify(jobsArray))
+                this.jobs.completed = jobsArray
+                this.refreshLock = false
+                
+            }
+
+            var onFailure = () =>  {
+                this.refreshLock = false
+            }
+
+            if(!this.connectedToApi()){throw "Not connected to API"}
+            if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
+            this.refreshLock = true
+        
+            this.salt.jobs.getJobsInLastFourHours(onSuccess,onFailure)
+ 
+        },
+        autoUpdate(){
+            this.loadJobsFromServer()
+            this.loadActiveJobsFromServer()
+        },
+        createJobsUpdatePoller: function(){
+            this.autoRefreshInterval = setInterval(this.autoUpdate, 60000)
+        },
+        waitingOnJobQuery() {
+            if(typeof(this.refreshLock) == "boolean") 
+                return this.refreshLock
+        },
+        sortByFunction () {
+
+            if(this.actionBar.sort === 'functionUp'){
+                this.actionBar.sort = 'functionDown'
+                this.jobs.completed =  this.salt.jobs.sort.functionDown(this.jobs.completed)
+            }
+            else{
+                this.actionBar.sort = 'functionUp'
+                this.jobs.completed = this.salt.jobs.sort.functionUp(this.jobs.completed)
+            }
+        },
+        sortByStart () {
+            if(this.actionBar.sort === 'startUp'){
+                this.actionBar.sort = 'startDown'
+                this.jobs.completed = this.salt.jobs.sort.startUp(this.jobs.completed)
+            }
+            else{
+                this.actionBar.sort = 'startUp'
+                this.jobs.completed = this.salt.jobs.sort.startDown(this.jobs.completed)
+            }
+        },
+        sortByTarget () {
+            if(this.actionBar.sort === 'targetUp'){
+                this.actionBar.sort = 'targetDown'
+                this.jobs.completed = this.salt.jobs.sort.targetUp(this.jobs.completed)
+            }
+            else{
+                this.actionBar.sort = 'targetUp'
+                this.jobs.completed = this.salt.jobs.sort.targetDown(this.jobs.completed)
+            }
+        },
+        
         addFilter: function() {
             // If not enough info return right away
             if(this.filterMenu['type'] == "Choose filter type" || 
@@ -227,7 +276,8 @@ export default {
             }
             
         },
-        filterJobs: function () {
+        // TODO: Refactor this. Move to external library
+        filterJobs: function (){
             var staging = this.jobs
 
             console.debug('PreFilter Jobs length ' + this.jobs.length)
@@ -243,104 +293,13 @@ export default {
                 }
             }
 
-            console.debug('Exiting filter loop')
-            console.debug(staging.length)
-
-       
-            // #### SORT LOGIC 
-            if (this.sort == 'functionSortUp'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.Function < b.properties.Function) return 1;
-                    if(a.properties.Function > b.properties.Function) return -1;
-                    return 0; 
-                    }
-                )
-            }
-            if (this.sort == 'functionSortDown'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.Function > b.properties.Function) return 1;
-                    if(a.properties.Function < b.properties.Function) return -1;
-                    return 0; 
-                    })
-                
-            }
-            if (this.sort == 'startSortUp'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.StartTime < b.properties.StartTime) return 1;
-                    if(a.properties.StartTime > b.properties.StartTime) return -1;
-                    return 0; 
-                    })
-            }
-            if (this.sort == 'startSortDown'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.StartTime > b.properties.StartTime) return 1;
-                    if(a.properties.StartTime < b.properties.StartTime) return -1;
-                    return 0; 
-                    })
-            }
-            if (this.sort == 'targetSortUp'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.Target < b.properties.Target) return 1;
-                    if(a.properties.Target > b.properties.Target) return -1;
-                    return 0; 
-                })
-            }
-            if (this.sort == 'targetSortDown'){
-                this.filteredJobs = staging.sort(function(a,b) {
-                    if(a.properties.Target > b.properties.Target) return 1;
-                    if(a.properties.Target < b.properties.Target) return -1;
-                    return 0; 
-                    })
-            }
         },
-        onSubmit: function(jid) {
-            this.loadJobsFromServer()
-            // Create job element
-            // Set the progress bar, jid, targets, function etc
-            // query progress/status
-        },
-        onReturn: function(value) {
-            // Show green checkmark and disappear from regular list
-            // Refresh job list
-        }
-    },
-    data() {
-        return {
-            state: this.$root.sharedState.state,
-            timer: '',
-            jobs: [],
-            pending: [],
-            filteredJobs: [],
-            sort: 'startSortUp',
-            filters: [
-                {"type":"Function","value":"runner.jobs.list_jobs"}
-            ],
-            timeWindow: {
-                'from': new Date(Date.now() - 86400000),
-                'to': new Date(Date.now())
-            },
-            filterMenu: {
-                "type": "Choose filter type", 
-                "value": null,
-                "action": "Include/Exclude",
-                "variant": "primary",
-            },
-            navSelection: 'Sorts',
-            refreshLock: false,
-        }
-    },
-    created() {
-        if(!this.loadJobsFromStorage()){this.loadJobsFromServer()}
-        this.timer = setInterval(this.loadJobs, 40000)
-    },
-    beforeDestroy() {
-        clearInterval(this.timer)
     },
     computed: {
         jidInventory: function () {
-            if(this.jobs.length <= 0){ return }
+            if(this.jobs.completed.length <= 0){ return }
             var jids = []
-            this.jobs.forEach( function(job, index) {
+            this.jobs.completed.forEach( function(job, index) {
                 jids.push(job.jid)
             })
             return jids

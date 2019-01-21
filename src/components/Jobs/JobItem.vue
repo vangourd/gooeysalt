@@ -2,7 +2,7 @@
     <b-card class="job-card">
         <b-row>
             <b-col cols="10">
-                    <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }}
+                    <strong>{{ job.properties.Function }}</strong> on {{ job.properties.Target }} by <i class="fa fa-user"></i> {{ job.properties.User }}
                     <p class="small text-secondary">
                         {{ job.properties.StartTime }} <br>
                     </p>
