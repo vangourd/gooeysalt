@@ -33,7 +33,7 @@
                         'fa-bullseye': !this.actionBar.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-                <b-nav-item @click="autoUpdate">
+                <b-nav-item @click="refreshData()">
                     <i class="fa fa-undo" v-if="!refreshLock "></i> 
                     <i class="fa fa-spinner" v-if="refreshLock"></i>
                     Refresh
@@ -151,13 +151,7 @@ export default {
     },
     created() {
         if(this.connectedToApi()){
-            this.salt = new SaltClient(this.state.auth)
-            this.saltjobs = new SaltJobs(this.state.auth)
-            if(!this.loadJobsFromStorage()) {
-                console.debug("No local storage data. Querying server...")
-                this.autoUpdate()
-            }
-            this.createJobsUpdatePoller()
+            this.setupClients()
         }
     },
     beforeDestroy() {
@@ -167,6 +161,16 @@ export default {
         connectedToApi(){
             if(typeof(this.state.auth.status) == 'boolean')
                 return this.state.auth.status
+        },
+        setupClients(){
+            this.salt = new SaltClient(this.state.auth)
+            this.saltjobs = new SaltJobs(this.state.auth)
+            if(!this.loadJobsFromStorage()) {
+                console.debug("No local storage data. Querying server...")
+                this.loadJobsFromServer()
+                this.saltjobs.activeJobs.get((response) => {console.debug(response)})
+            }
+            this.createJobsUpdatePoller()
         },
         loadJobsFromStorage: function(){
             if (localStorage.getItem('jobs') ){
@@ -215,9 +219,12 @@ export default {
             this.saltjobs.jobs.getJobsInLastFourHours(onSuccess,onFailure)
  
         },
-        autoUpdate(){
-            this.loadJobsFromServer()
-            this.loadActiveJobsFromServer()
+        onSuccess: function(response) {
+            console.debug(response)
+        },
+        refreshData: function() {
+            this.saltjobs.activeJobs.get(this.onSuccess)
+            this.saltjobs.completedJobs.getRecent(this.onSuccess)
         },
         createJobsUpdatePoller: function(){
             this.autoRefreshInterval = setInterval(this.autoUpdate, 60000)

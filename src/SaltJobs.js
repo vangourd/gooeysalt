@@ -61,7 +61,9 @@ export default class SaltJobs extends SaltClient {
             }
         this.jobs = {
 
-            
+            list_jobs: (response) => {
+                console.debug('list_jobs was run')
+            },
             list_jobs_array: (response) => {
                 var query = response['data']['return'][0]
                 var jobsArray = []
@@ -121,28 +123,76 @@ export default class SaltJobs extends SaltClient {
             waitingOnResponse: false,
             interval: null,
             data: [],
-            get: (onSuccess, onFailure) => {
-                this.jobs.active_jobs_array(onSuccess,onFailure)
+            setupInterval: () => {
+                this.interval = setInterval(
+                    function() {
+                        this.get(this.onSuccess)
+                    },
+                    /*every*/ 60000 /*milliseconds*/
+                )
+            },
+            clearInterval: () => {
+                clearInterval(this.interval)
+            },
+            onSuccess: function(response){
+                console.debug(response)
+                this.waitingOnResponse = false
+            },
+            onFailure: (err) => {
+                    console.debug(err)
+                    this.waitingOnResponse = false
+            },
+            get: (onSuccess) => {
+                var onSuccessRetandRelease = (response) =>{
+                    onSuccess(response)
+                    this.activeJobs.waitingOnResponse = false
+                }
+                this.activeJobs.waitingOnResponse = true
+                this.jobs.active_jobs_array(onSuccessRetandRelease,this.activeJobs.onFailure)
             }
         }
         this.completedJobs = {
             waitingOnResponse: false,
-            interval: null,
+            interval: setInterval(function() {
+                    this.completedJobs.getRecent(this.completedJobs.onSuccess)
+                },60000),
             index: [],
             data: [],
-            getTwentyFourHours: (onSuccess, onFailure) => {
+            clearInterval: () => {
+                clearInterval(this.interval)
+            },
+            onFailure: (err) => {
+                console.debug(err)
+                this.waitingOnResponse = false
+            },
+            onSuccess: function(response){
+                console.debug(response)
+                this.waitingOnResponse = false
+            },
+            getTwentyFourHours: (onSuccess) => {
                 var start_time = new Date(Date.now() - (24 /*Hours*/ (60 * (60 * 1000))))
                 var end_time = new Date(Date.now())
                 var start_time = start_time.toLocaleString()
                 var end_time = end_time.toLocaleString()
-                this.list_jobs(start_time,end_time,onSuccess,onFailure)
+
+                this.list_jobs(
+                    start_time,
+                    end_time,
+                    onSuccess,
+                    this.completedJobs.onFailure
+                )
             },
-            getRecent: (onSuccess,onFailure) =>{
+            getRecent: (onSuccess) =>{
                 var start_time = new Date(Date.now() - 300000)
                 var end_time = new Date(Date.now())
                 var start_time = start_time.toLocaleString()
                 var end_time = end_time.toLocaleString()
-                this.list_jobs(start_time,end_time,onSuccess,onFailure)
+                this.list_jobs(
+                    start_time,
+                    end_time,
+                    onSuccess,
+                    this.completedJobs.onFailure
+                )
             },
             getByDate: (onSuccess, onFailure, start,end) => {
                 var start_time = start
@@ -152,10 +202,6 @@ export default class SaltJobs extends SaltClient {
 
 
         }
-
-        
-
-
     }
     joinJobData (lookupTable,newJobs){
                 if(typeof(lookupTable) === 'undefined'){throw "Missing [0:Array of jid's] parameter"}
@@ -167,7 +213,7 @@ export default class SaltJobs extends SaltClient {
                 }
                 return lookupTable
     }
-    list_jobs (start_time,end_time,onSuccess,onFailure) {
+    list_jobs (start_time,end_time,onSuccess) {
                 axios.post('https://' + this.auth.server + 
                     ':' + this.auth.port + '/',{
                     client: "runner",
@@ -188,7 +234,6 @@ export default class SaltJobs extends SaltClient {
                 })
                 .catch((err) => {
                     console.debug(err)
-                    onFailure()
                 })
     }
     jobsToArray (response){
