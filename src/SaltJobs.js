@@ -116,7 +116,6 @@ export default class SaltJobs extends SaltClient {
             getActiveJobs: (onSuccess, onFailure) => {
                 this.jobs.active_jobs_array(onSuccess,onFailure)
             },
-            
 
         }
         this.activeJobs = {

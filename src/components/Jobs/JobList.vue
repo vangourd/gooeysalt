@@ -146,13 +146,12 @@ export default {
             refreshLock: false,
             test: null,
             salt: null,
-            saltjobs: null
+            saltjobs: null,
+            setupInterval: false
         }
     },
     created() {
-        if(this.connectedToApi()){
-            this.setupClients()
-        }
+        this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
         clearInterval(this.autoRefreshInterval)
@@ -163,14 +162,22 @@ export default {
                 return this.state.auth.status
         },
         setupClients(){
-            this.salt = new SaltClient(this.state.auth)
-            this.saltjobs = new SaltJobs(this.state.auth)
-            if(!this.loadJobsFromStorage()) {
-                console.debug("No local storage data. Querying server...")
-                this.loadJobsFromServer()
-                this.saltjobs.activeJobs.get((response) => {console.debug(response)})
+            if(this.connectedToApi()){
+                clearInterval(this.setupInterval)
+                console.debug('Authenticated. Setting up clients...')
+                this.salt = new SaltClient(this.state.auth)
+                this.saltjobs = new SaltJobs(this.state.auth)
+                if(!this.loadJobsFromStorage()) {
+                    console.debug("No local storage data. Querying server...")
+                    this.loadJobsFromServer()
+                    this.saltjobs.activeJobs.get((response) => {console.debug(response)})
+                }
+                this.createJobsUpdatePoller()
             }
-            this.createJobsUpdatePoller()
+            else{
+                console.debug('Not authenticated. Waiting...')
+            }
+           
         },
         loadJobsFromStorage: function(){
             if (localStorage.getItem('jobs') ){
