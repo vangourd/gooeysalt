@@ -2,7 +2,7 @@ import axios from 'axios'
 import SaltClient from './SaltClient.js'
 
 export default class SaltJobs extends SaltClient {
-    constructor(auth){
+    constructor(auth,complete,active){
         super(auth)
         this.sort = {
                 functionUp: function(jobs){
@@ -58,160 +58,93 @@ export default class SaltJobs extends SaltClient {
                     })
                     return jobs
                 }
-            }
+        }
         this.jobs = {
-
-            list_jobs: (response) => {
-                console.debug('list_jobs was run')
-            },
-            list_jobs_array: (response) => {
+            active: new ActiveJobsHandler(auth,active),
+            complete: new CompleteJobsHandler(auth,complete),
+        }
+    }
+}
+class QueryHandler {
+        constructor(auth,data){
+            this.waitingOnResponse = false
+            this.intervals = {}
+            this.auth = auth
+            this.data = data
+            this.onSuccess = (data) => {
+                this.waitingOnResponse = false
+                this.data = data
+            }
+            this.onFailure = (err) => {
+                    console.debug(err)
+                    this.waitingOnResponse = false
+            }
+        }
+        startPoller(name,query,freqInMS) {
+            this.intervals[name] = setInterval(query,freqInMS)
+        }
+        stopPoller(name) {
+            clearInterval(this.intervals[name])
+        }
+        setData(data) {
+            data = data
+        }
+        jobsToArray (response){
                 var query = response['data']['return'][0]
                 var jobsArray = []
                 for (var jid in query){
                     jobsArray.push({'jid':jid,'properties': query[jid]})
                 }
                 return jobsArray
-            },
-            active_jobs_array: (onSuccess, onFailure) => {
-                axios.post('https://' + this.auth.server + 
-                    ':' + this.auth.port + '/',{
-                    client: "runner",
-                    fun: "jobs.active",
-                    },
-                    {headers: {
-                            'x-auth-token': this.auth.token,
-                            'content-type': 'application/json',
-                            'accept': 'application/json'
-                        }
-                    })
-                .then((response) => {
-                    this.handleServerErrorResponse(response)
-                    var query = response['data']['return'][0]
-                    var jobsArray = []
-                    for (var jid in query){
-                        jobsArray.push({'jid':jid,'properties': query[jid]})
-                    }
-                    onSuccess(jobsArray)
-                })
-                .catch((err) => {
-                    console.debug(err)
-                    onFailure()
-                })
-            },
+        }           
+}
 
-            getJobsInLastFiveMinutes: (onSuccess,onFailure) => {
-                var start_time = new Date(Date.now() - 300000)
-                var end_time = new Date(Date.now())
-                var start_time = start_time.toLocaleString()
-                var end_time = end_time.toLocaleString()
-                this.jobs.list_jobs(start_time,end_time,onSuccess,onFailure)
-            },
-            getJobsInLastFourHours: (onSuccess,onFailure) => {
-                var start_time = new Date(Date.now() - 14400000)
-                var end_time = new Date(Date.now())
-                var start_time = start_time.toLocaleString()
-                var end_time = end_time.toLocaleString()
-                this.jobs.list_jobs(start_time,end_time,onSuccess,onFailure)
-            },
-            getActiveJobs: (onSuccess, onFailure) => {
-                this.jobs.active_jobs_array(onSuccess,onFailure)
-            },
-
-        }
-        this.activeJobs = {
-            waitingOnResponse: false,
-            interval: null,
-            data: [],
-            setupInterval: () => {
-                this.interval = setInterval(
-                    function() {
-                        this.get(this.onSuccess)
-                    },
-                    /*every*/ 60000 /*milliseconds*/
-                )
-            },
-            clearInterval: () => {
-                clearInterval(this.interval)
-            },
-            onSuccess: function(response){
-                console.debug(response)
-                this.waitingOnResponse = false
-            },
-            onFailure: (err) => {
-                    console.debug(err)
-                    this.waitingOnResponse = false
-            },
-            get: (onSuccess) => {
-                var onSuccessRetandRelease = (response) =>{
-                    onSuccess(response)
-                    this.activeJobs.waitingOnResponse = false
-                }
-                this.activeJobs.waitingOnResponse = true
-                this.jobs.active_jobs_array(onSuccessRetandRelease,this.activeJobs.onFailure)
-            }
-        }
-        this.completedJobs = {
-            waitingOnResponse: false,
-            interval: setInterval(function() {
-                    this.completedJobs.getRecent(this.completedJobs.onSuccess)
-                },60000),
-            index: [],
-            data: [],
-            clearInterval: () => {
-                clearInterval(this.interval)
-            },
-            onFailure: (err) => {
-                console.debug(err)
-                this.waitingOnResponse = false
-            },
-            onSuccess: function(response){
-                console.debug(response)
-                this.waitingOnResponse = false
-            },
-            getTwentyFourHours: (onSuccess) => {
-                var start_time = new Date(Date.now() - (24 /*Hours*/ (60 * (60 * 1000))))
-                var end_time = new Date(Date.now())
-                var start_time = start_time.toLocaleString()
-                var end_time = end_time.toLocaleString()
-
-                this.list_jobs(
-                    start_time,
-                    end_time,
-                    onSuccess,
-                    this.completedJobs.onFailure
-                )
-            },
-            getRecent: (onSuccess) =>{
-                var start_time = new Date(Date.now() - 300000)
-                var end_time = new Date(Date.now())
-                var start_time = start_time.toLocaleString()
-                var end_time = end_time.toLocaleString()
-                this.list_jobs(
-                    start_time,
-                    end_time,
-                    onSuccess,
-                    this.completedJobs.onFailure
-                )
-            },
-            getByDate: (onSuccess, onFailure, start,end) => {
-                var start_time = start
-                var end_time = end
-                this.list_jobs(start_time, end_time, onSuccess, onFailure)
-            }
-
-
-        }
+class ActiveJobsHandler extends QueryHandler {
+    constructor(auth,data) {
+        super(auth,data)
     }
-    joinJobData (lookupTable,newJobs){
-                if(typeof(lookupTable) === 'undefined'){throw "Missing [0:Array of jid's] parameter"}
-                if(typeof(newJobs) === 'undefined'){throw "Missing [1: New data to merge'] parameter"}
-                for(var index in newJobs){
-                    if(!lookupTable.includes(newJobs[index].jid)){
-                        lookupTable.push(newJobs[index].jid)
-                    }
-                }
-                return lookupTable
+    get() {
+            console.debug(this)
+            this.waitingOnResponse = true
+            this.active_jobs_array(
+                this.onSuccess,
+                this.onFailure
+            )
     }
+    active_jobs_array (onSuccess, onFailure) {
+        axios.post('https://' + this.auth.server + 
+            ':' + this.auth.port + '/',{
+            client: "runner",
+            fun: "jobs.active",
+            },
+            {headers: {
+                    'x-auth-token': this.auth.token,
+                    'content-type': 'application/json',
+                    'accept': 'application/json'
+                }
+            })
+        .then(function (response){
+            console.debug(this)
+            var jobsArray = this.jobsToArray(response)
+            onSuccess(jobsArray)
+            this.handleServerErrorResponse(response)
+            this.onSuccess(result)
+        })
+        .catch((err) => {
+            console.debug(err)
+            onFailure()
+        })
+    }
+    
+}
+
+class CompleteJobsHandler extends QueryHandler {
+
+    constructor(auth,data) {
+        super(auth,data)
+        this.index = []
+    }
+
     list_jobs (start_time,end_time,onSuccess) {
                 axios.post('https://' + this.auth.server + 
                     ':' + this.auth.port + '/',{
@@ -226,21 +159,68 @@ export default class SaltJobs extends SaltClient {
                             'accept': 'application/json'
                         }
                     })
-                .then((response) => {
+                   .then(function (response){
+                    console.debug(this)
                     this.handleServerErrorResponse(response)
-                    var jobsArray = this.jobsToArray(response)
-                    onSuccess(jobsArray)
+                    var jobsArray = jobsToArray(response)
+                    this.onSuccess(jobsArray)
                 })
                 .catch((err) => {
                     console.debug(err)
                 })
     }
-    jobsToArray (response){
-                var query = response['data']['return'][0]
-                var jobsArray = []
-                for (var jid in query){
-                    jobsArray.push({'jid':jid,'properties': query[jid]})
+
+    
+
+    joinJobData (lookupTable,newJobs){
+                if(typeof(lookupTable) === 'undefined'){throw "Missing [0:Array of jid's] parameter"}
+                if(typeof(newJobs) === 'undefined'){throw "Missing [1: New data to merge'] parameter"}
+                for(var index in newJobs){
+                    if(!lookupTable.includes(newJobs[index].jid)){
+                        lookupTable.push(newJobs[index].jid)
+                    }
                 }
-                return jobsArray
+                return lookupTable
     }
-} 
+
+    getTwentyFourHours(onSuccess) {
+        var start_time = new Date(Date.now() - (24 /*Hours*/ (60 * (60 * 1000))))
+        var end_time = new Date(Date.now())
+        var start_time = start_time.toLocaleString()
+        var end_time = end_time.toLocaleString()
+
+        this.list_jobs(
+            start_time,
+            end_time,
+            onSuccess,
+            this.completedJobs.onFailure
+        )
+    }
+
+    getRecent(onSuccess) {
+        var start_time = new Date(Date.now() - 300000)
+        var end_time = new Date(Date.now())
+        var start_time = start_time.toLocaleString()
+        var end_time = end_time.toLocaleString()
+        this.list_jobs(
+            start_time,
+            end_time,
+            this.onSuccess,
+            this.onFailure
+        )
+    }
+
+    getByDate(onSuccess, onFailure, start,end){
+        var start_time = start
+        var end_time = end
+        this.list_jobs(start_time, end_time, onSuccess, onFailure)
+    }
+    jidInventory(jobs) {
+            if(this.jobs.length <= 0){ return }
+            var jids = []
+            jobs.forEach( function(job, index) {
+                jids.push(job.jid)
+            })
+            return jids
+    }
+}

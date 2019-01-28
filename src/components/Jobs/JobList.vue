@@ -33,9 +33,9 @@
                         'fa-bullseye': !this.actionBar.sort.includes('target')
                     }"> Target</i>
                 </b-nav-item>
-                <b-nav-item @click="refreshData()">
-                    <i class="fa fa-undo" v-if="!refreshLock "></i> 
-                    <i class="fa fa-spinner" v-if="refreshLock"></i>
+                <b-nav-item @click="refresh()">
+                    <!--TODO: Fix this <i class="fa fa-undo" v-if="!refreshLock "></i> -->
+                    <i class="fa fa-spinner"></i>
                     Refresh
                 </b-nav-item>
                 <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
@@ -83,10 +83,10 @@
         <jobcreator></jobcreator>
         <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
         </job-pending>
-        <job-item v-if="jobs.completed.length > 0" v-for="job in jobs.completed" :job="job" :key="job.jid">
+        <job-item v-if="jobs.complete.length > 0" v-for="job in jobs.complete" :job="job" :key="job.jid">
         </job-item>
         <div id="statusList">
-            <spinner v-if="jobs.completed.length == 0 && this.state.auth.status == true"></spinner>
+            <spinner v-if="jobs.complete.length == 0 && this.state.auth.status == true"></spinner>
             <b-alert id="authWarning" variant="warning" v-if=" this.state.auth.status == false">
                 You are not authenticated
             </b-alert>
@@ -118,17 +118,14 @@ export default {
     data() {
         return {
             state: this.$root.sharedState.state,
-            autoRefreshInterval: '',
             jobs: {
-                'completed': [],
+                'complete': [],
                 'active': [],
-                'lookupTable': [],
             },
             actionBar: {
                 sort: "startUp"
             },
             filteredJobs: [],
-            sorter: null,
             filters: [
                 {"type":"Function","value":"runner.jobs.list_jobs"}
             ],
@@ -143,10 +140,7 @@ export default {
                 "variant": "primary",
             },
             navSelection: 'Sorts',
-            refreshLock: false,
-            test: null,
             salt: null,
-            saltjobs: null,
             setupInterval: false
         }
     },
@@ -154,121 +148,78 @@ export default {
         this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
-        clearInterval(this.autoRefreshInterval)
     },
     methods: {
+
+        refresh(){
+            this.salt.jobs.active.get()
+            this.salt.jobs.complete.getRecent()
+        },
         connectedToApi(){
             if(typeof(this.state.auth.status) == 'boolean')
                 return this.state.auth.status
         },
+
         setupClients(){
             if(this.connectedToApi()){
                 clearInterval(this.setupInterval)
                 console.debug('Authenticated. Setting up clients...')
-                this.salt = new SaltClient(this.state.auth)
-                this.saltjobs = new SaltJobs(this.state.auth)
+                this.salt = new SaltJobs(this.state.auth,this.jobs.complete,this.jobs.active)
                 if(!this.loadJobsFromStorage()) {
                     console.debug("No local storage data. Querying server...")
-                    this.loadJobsFromServer()
-                    this.saltjobs.activeJobs.get((response) => {console.debug(response)})
+                    this.refresh()
                 }
-                this.createJobsUpdatePoller()
             }
             else{
                 console.debug('Not authenticated. Waiting...')
             }
            
         },
+
         loadJobsFromStorage: function(){
+            if(localStorage.getItem('activeJobs')){
+                console.debug("Active jobs loaded from cache")
+                this.jobs.active = JSON.parse(localStorage.getItem('activeJobs'))
+            }
             if (localStorage.getItem('jobs') ){
                 console.debug("Job data loaded from cache")
-                this.jobs.completed = JSON.parse(localStorage.getItem('jobs'))
+                this.jobs.complete = JSON.parse(localStorage.getItem('jobs'))
                 return true
             }
             else return false
         },
-        loadActiveJobsFromServer: function(){
 
-            var onSuccess = (jobsArray) => {
-                this.jobs.active = jobsArray
-                this.refreshLock = false
-            }
-
-            var onFailure = () =>  {
-                this.refreshLock = false
-            }
-            if(!this.connectedToApi()){throw "Not connected to API"}
-            if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
-            this.refreshLock = true
-
-            this.saltjobs.getActiveJobs(onAJSuccess,onFailure)
-
-        },
-        loadJobsFromServer: function(){
-
-            var onSuccess = (jobsArray) => {
-                // TODO: Use a job merge function instead of wiping the array
-                localStorage.setItem('jobs', JSON.stringify(jobsArray))
-                this.jobs.completed = jobsArray
-                this.refreshLock = false
-                
-            }
-
-            var onFailure = () =>  {
-                this.refreshLock = false
-            }
-
-            if(!this.connectedToApi()){throw "Not connected to API"}
-            // TODO: Move this into SaltJobs class logic
-            if(this.waitingOnJobQuery()){throw "Already waiting on job query response"}
-            this.refreshLock = true
-        
-            this.saltjobs.jobs.getJobsInLastFourHours(onSuccess,onFailure)
- 
-        },
-        onSuccess: function(response) {
-            console.debug(response)
-        },
-        refreshData: function() {
-            this.saltjobs.activeJobs.get(this.onSuccess)
-            this.saltjobs.completedJobs.getRecent(this.onSuccess)
-        },
-        createJobsUpdatePoller: function(){
-            this.autoRefreshInterval = setInterval(this.autoUpdate, 60000)
-        },
-        waitingOnJobQuery() {
-            if(typeof(this.refreshLock) == "boolean") 
-                return this.refreshLock
-        },
         sortByFunction () {
 
             if(this.actionBar.sort === 'functionUp'){
                 this.actionBar.sort = 'functionDown'
-                this.jobs.completed =  this.saltjobs.sort.functionDown(this.jobs.completed)
+                this.jobs.complete =  this.saltjobs.sort.functionDown(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'functionUp'
-                this.jobs.completed = this.saltjobs.sort.functionUp(this.jobs.completed)
+                this.jobs.complete = this.saltjobs.sort.functionUp(this.jobs.complete)
             }
         },
+
         sortByStart () {
             if(this.actionBar.sort === 'startUp'){
                 this.actionBar.sort = 'startDown'
-                this.jobs.completed = this.saltjobs.sort.startUp(this.jobs.completed)
+                this.jobs.complete = this.saltjobs.sort.startUp(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'startUp'
-                this.jobs.completed = this.saltjobs.sort.startDown(this.jobs.completed)
+                this.jobs.complete = this.saltjobs.sort.startDown(this.jobs.complete)
             }
         },
+
         sortByTarget () {
             if(this.actionBar.sort === 'targetUp'){
                 this.actionBar.sort = 'targetDown'
-                this.jobs.completed = this.saltjobs.sort.targetUp(this.jobs.completed)
+                this.jobs.complete = this.saltjobs.sort.targetUp(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'targetUp'
-                this.jobs.completed = this.saltjobs.sort.targetDown(this.jobs.completed)
+                this.jobs.complete = this.saltjobs.sort.targetDown(this.jobs.complete)
             }
         },
         
@@ -292,6 +243,7 @@ export default {
             }
             
         },
+
         // TODO: Refactor this. Move to external library
         filterJobs: function (){
             var staging = this.jobs
@@ -312,14 +264,8 @@ export default {
         },
     },
     computed: {
-        jidInventory: function () {
-            if(this.jobs.completed.length <= 0){ return }
-            var jids = []
-            this.jobs.completed.forEach( function(job, index) {
-                jids.push(job.jid)
-            })
-            return jids
-        },
+        
+        
     },
 }
 
