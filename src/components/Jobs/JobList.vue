@@ -140,7 +140,7 @@ export default {
                 "variant": "primary",
             },
             navSelection: 'Sorts',
-            salt: null,
+            saltjobs: null,
             setupInterval: false
         }
     },
@@ -152,8 +152,8 @@ export default {
     methods: {
 
         refresh(){
-            this.salt.jobs.active.get()
-            this.salt.jobs.complete.getRecent()
+            this.saltjobs.jobs.active.get()
+            this.saltjobs.jobs.complete.getRecent()
         },
         connectedToApi(){
             if(typeof(this.state.auth.status) == 'boolean')
@@ -164,7 +164,7 @@ export default {
             if(this.connectedToApi()){
                 clearInterval(this.setupInterval)
                 console.debug('Authenticated. Setting up clients...')
-                this.salt = new SaltJobs(this.state.auth,this.jobs.complete,this.jobs.active)
+                this.saltjobs = new SaltJobs(this.state.auth,this.jobs.complete,this.jobs.active)
                 if(!this.loadJobsFromStorage()) {
                     console.debug("No local storage data. Querying server...")
                     this.refresh()
