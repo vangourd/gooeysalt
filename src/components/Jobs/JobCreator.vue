@@ -89,7 +89,6 @@ export default {
                         this.jobStatus.text = "Job Submitted"
                         this.jobStatus.variant = 'success'
                         this.$emit('submitted',response.data.return[0].jid)
-                        console.debug('That thing to do after the post was sent')
                     })
                     .catch((err) => {
                         console.debug(err)

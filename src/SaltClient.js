@@ -23,21 +23,4 @@ export default class SaltClient {
     
         })
     }
-
-    testConnection() {
-        // TODO: Do a post and test that authentication passes. If fail logout
-        this.axios.get('/')
-        .then((response) => {
-            if(response.status == 200){
-                console.debug("Axios Test Worked")
-            }
-            else {
-                console.debug("Axios Test Failed")
-            }
-        })
-        .catch((e) => {
-            console.debug(e)
-        })
-    }
-    
 }

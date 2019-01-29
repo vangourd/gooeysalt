@@ -72,7 +72,6 @@ class QueryHandler {
             this.auth = auth
             this.data = data
             this.onSuccess = (jobs) => {
-                console.debug('Jobs before')
                 this.waitingOnResponse = false
                 this.data.length = 0
                 this.data.push.apply(data, jobs)
@@ -119,7 +118,6 @@ class ActiveJobsHandler extends QueryHandler {
         super(auth,data)
     }
     get() {
-            console.debug(this)
             this.waitingOnResponse = true
             this.active_jobs_array(
                 this.onSuccess,
@@ -139,7 +137,6 @@ class ActiveJobsHandler extends QueryHandler {
                 }
             })
         .then( (response) => {
-            console.debug(this)
             var jobsArray = this.jobsToArray(response)
             this.handleServerErrorResponse(response)
             this.onSuccess(jobsArray)
@@ -156,8 +153,6 @@ class CompleteJobsHandler extends QueryHandler {
 
     constructor(auth,data) {
         super(auth,data)
-        console.debug('At the constructor level')
-        console.debug(this)
     }
 
     list_jobs (start_time,end_time,onSuccess) {
@@ -175,7 +170,6 @@ class CompleteJobsHandler extends QueryHandler {
                         }
                     })
                    .then( (response) => {
-                    console.debug(this)
                     this.handleServerErrorResponse(response)
                     var jobsArray = this.jobsToArray(response)
                     this.onSuccess(jobsArray)

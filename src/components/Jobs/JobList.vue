@@ -148,6 +148,7 @@ export default {
         this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
+        this.saveDataToStorage()
     },
     methods: {
 
@@ -163,30 +164,30 @@ export default {
         setupClients(){
             if(this.connectedToApi()){
                 clearInterval(this.setupInterval)
-                console.debug('Authenticated. Setting up clients...')
                 this.saltjobs = new SaltJobs(this.state.auth,this.jobs.complete,this.jobs.active)
                 if(!this.loadJobsFromStorage()) {
-                    console.debug("No local storage data. Querying server...")
                     this.refresh()
                 }
             }
             else{
-                console.debug('Not authenticated. Waiting...')
             }
            
         },
 
         loadJobsFromStorage: function(){
-            if(localStorage.getItem('activeJobs')){
-                console.debug("Active jobs loaded from cache")
-                this.jobs.active = JSON.parse(localStorage.getItem('activeJobs'))
-            }
-            if (localStorage.getItem('jobs') ){
-                console.debug("Job data loaded from cache")
-                this.jobs.complete = JSON.parse(localStorage.getItem('jobs'))
+            if(localStorage.getItem('jobsComplete')){
+                this.jobs.complete = JSON.parse(localStorage.getItem('jobsComplete'))
                 return true
             }
+
             else return false
+        },
+
+        saveDataToStorage: function() {
+            if(this.jobs.complete.length > 0){
+                var jobsComplete = JSON.stringify(this.jobs.complete)
+                localStorage.setItem('jobsComplete', jobsComplete)
+            }
         },
 
         sortByFunction () {
@@ -232,7 +233,6 @@ export default {
             }
             // Add filter to list
             if(this.filterMenu['type'] != "Daterange"){
-                console.debug('Pushing filter' + this.filterMenu.value)
                 this.filters.push({
                     'type':     this.filterMenu['type'],
                     'value':   this.filterMenu['value'],
@@ -248,11 +248,9 @@ export default {
         filterJobs: function (){
             var staging = this.jobs
 
-            console.debug('PreFilter Jobs length ' + this.jobs.length)
 
             for (var fi in this.filters){
                
-                console.debug("Processing exclude filter " + this.filters[fi].value)
                 for (var j in staging){
                     // If you match the filter you get ignored
                    if (staging[j].properties[this.filters[fi].type].includes(this.filters[fi].value)){

@@ -61,7 +61,6 @@ import axios from 'axios'
             saltApiLogin: function() {
                 // If connected then disconnect
                 if(this.state.auth.status == true) {
-                    console.debug('Logging out ' + this.state.auth.username)
                     axios.post('https://' + this.state.auth.server + 
                                  ':' + this.state.auth.port + '/logout', {},{
                         headers: {
@@ -72,14 +71,12 @@ import axios from 'axios'
                     })
                       .then((response) => {
                           if(response.status == 200) {
-                              console.debug('Log out confirmed')
                               this.$root.sharedState.clearAuth()
                               this.password = null
                           }
                       } )
                       .catch((error) => {
                         if(error.response.status == '401'){
-                            console.debug('User not authorized to logout')
                             this.$root.sharedState.clearAuth()
                             this.password = null
                         }
@@ -88,7 +85,6 @@ import axios from 'axios'
                  }
                 // If disconnected then connect
                 if(this.state.auth.status == false) {
-                    console.debug('Logging into: ' + this.state.auth.server + this.state.auth.port)
                     axios.post('https://' + this.state.auth.server + 
                                 ':' + this.state.auth.port + '/login', {
                         username: this.state.auth.username,
@@ -96,7 +92,6 @@ import axios from 'axios'
                         eauth: this.state.auth.eauth
                     })
                     .then((response) => {
-                        console.debug("response received")
                         this.response = response.data.return[0]
                         this.$root.sharedState.setAuth(
                         this.response.token,

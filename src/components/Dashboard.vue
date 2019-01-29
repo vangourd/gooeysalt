@@ -33,7 +33,6 @@ import Reports from './Reports.vue'
             }
         },
         created() { 
-            console.debug('Dashboard component created')
             this.$root.sharedState.initAuth()
             
         },

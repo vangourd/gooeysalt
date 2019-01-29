@@ -56,7 +56,6 @@ export default {
     methods: {
         loadData: function() {
             this.jobReturn = null
-            console.debug('Calling API for job data')
             axios.post('https://' + this.state.auth.server + 
                     ':' + this.state.auth.port + '/', {
                         client: "runner",

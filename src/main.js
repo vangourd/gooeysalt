@@ -75,7 +75,6 @@ var store = {
     if (localStorage.getItem('auth')){
       let startupstate = JSON.parse(localStorage.getItem('auth'))
       // Debug log state returning from local storage
-      console.debug(startupstate)
       // Test for token expiration
       if (Date.now() < startupstate.expire){
         console.log('Token expiration pass')
@@ -85,9 +84,6 @@ var store = {
         console.log('Token expired')
         localStorage.clear()
       }
-    }
-    else {
-      console.debug('No local state stored')
     }
   }
 }
