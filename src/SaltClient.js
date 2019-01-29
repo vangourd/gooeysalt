@@ -39,21 +39,5 @@ export default class SaltClient {
             console.debug(e)
         })
     }
-
-    handleServerErrorResponse(response) {
-                if(typeof(response['data']['return'][0]) == 'undefined'){
-                    throw {name:"EmptyResponse",message:response}
-                }
-                if(response['data']['return'].includes("Exception occurred")){
-                        throw {name:"ServerError",message:response['data']['return'][0]}
-                }
-                if(typeof(response['data']['return'][0]) == 'object'){
-                    if(Object.keys(response['data']['return'][0]).length == 0){
-                        throw {name:"EmptyResponse", message:response}
-                    }
-                }
-                else{
-                    return true
-                }
-    }
+    
 }

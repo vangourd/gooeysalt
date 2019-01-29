@@ -71,9 +71,10 @@ class QueryHandler {
             this.intervals = {}
             this.auth = auth
             this.data = data
-            this.onSuccess = (data) => {
+            this.onSuccess = (jobs) => {
+                console.debug('Jobs before')
                 this.waitingOnResponse = false
-                this.data = data
+                this.data.push.apply(data, jobs)
             }
             this.onFailure = (err) => {
                     console.debug(err)
@@ -86,9 +87,6 @@ class QueryHandler {
         stopPoller(name) {
             clearInterval(this.intervals[name])
         }
-        setData(data) {
-            data = data
-        }
         jobsToArray (response){
                 var query = response['data']['return'][0]
                 var jobsArray = []
@@ -97,6 +95,22 @@ class QueryHandler {
                 }
                 return jobsArray
         }           
+        handleServerErrorResponse(response) {
+                if(typeof(response['data']['return'][0]) == 'undefined'){
+                    throw {name:"EmptyResponse",message:response}
+                }
+                if(response['data']['return'].includes("Exception occurred")){
+                        throw {name:"ServerError",message:response['data']['return'][0]}
+                }
+                if(typeof(response['data']['return'][0]) == 'object'){
+                    if(Object.keys(response['data']['return'][0]).length == 0){
+                        throw {name:"EmptyResponse", message:response}
+                    }
+                }
+                else{
+                    return true
+                }
+        }
 }
 
 class ActiveJobsHandler extends QueryHandler {
@@ -123,16 +137,15 @@ class ActiveJobsHandler extends QueryHandler {
                     'accept': 'application/json'
                 }
             })
-        .then(function (response){
+        .then( (response) => {
             console.debug(this)
             var jobsArray = this.jobsToArray(response)
-            onSuccess(jobsArray)
             this.handleServerErrorResponse(response)
-            this.onSuccess(result)
+            this.onSuccess(jobsArray)
         })
         .catch((err) => {
             console.debug(err)
-            onFailure()
+            this.onFailure()
         })
     }
     
@@ -143,6 +156,8 @@ class CompleteJobsHandler extends QueryHandler {
     constructor(auth,data) {
         super(auth,data)
         this.index = []
+        console.debug('At the constructor level')
+        console.debug(this)
     }
 
     list_jobs (start_time,end_time,onSuccess) {
@@ -159,10 +174,10 @@ class CompleteJobsHandler extends QueryHandler {
                             'accept': 'application/json'
                         }
                     })
-                   .then(function (response){
+                   .then( (response) => {
                     console.debug(this)
                     this.handleServerErrorResponse(response)
-                    var jobsArray = jobsToArray(response)
+                    var jobsArray = this.jobsToArray(response)
                     this.onSuccess(jobsArray)
                 })
                 .catch((err) => {
