@@ -74,6 +74,7 @@ class QueryHandler {
             this.onSuccess = (jobs) => {
                 console.debug('Jobs before')
                 this.waitingOnResponse = false
+                this.data.length = 0
                 this.data.push.apply(data, jobs)
             }
             this.onFailure = (err) => {
@@ -155,7 +156,6 @@ class CompleteJobsHandler extends QueryHandler {
 
     constructor(auth,data) {
         super(auth,data)
-        this.index = []
         console.debug('At the constructor level')
         console.debug(this)
     }
@@ -187,10 +187,8 @@ class CompleteJobsHandler extends QueryHandler {
 
     
 
-    joinJobData (lookupTable,newJobs){
-                if(typeof(lookupTable) === 'undefined'){throw "Missing [0:Array of jid's] parameter"}
-                if(typeof(newJobs) === 'undefined'){throw "Missing [1: New data to merge'] parameter"}
-                for(var index in newJobs){
+    removeDuplicateJobs (jobs){
+                for(var index in jobs){
                     if(!lookupTable.includes(newJobs[index].jid)){
                         lookupTable.push(newJobs[index].jid)
                     }
@@ -229,13 +227,5 @@ class CompleteJobsHandler extends QueryHandler {
         var start_time = start
         var end_time = end
         this.list_jobs(start_time, end_time, onSuccess, onFailure)
-    }
-    jidInventory(jobs) {
-            if(this.jobs.length <= 0){ return }
-            var jids = []
-            jobs.forEach( function(job, index) {
-                jids.push(job.jid)
-            })
-            return jids
     }
 }
