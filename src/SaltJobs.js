@@ -25,8 +25,8 @@ export default class SaltJobs extends SaltClient {
                 // TODO: This needs to use date objects and not just strings as JS's string comparison is broken
                 startUp: function(jobs){
                     jobs.sort(function(a,b) {
-                        if(a.properties.StartTime < b.properties.StartTime) return 1;
-                        if(a.properties.StartTime > b.properties.StartTime) return -1;
+                        if(new Date(a.properties.StartTime) < new Date(b.properties.StartTime)) return 1;
+                        if(new Date(a.properties.StartTime) > new Date(b.properties.StartTime)) return -1;
                         return 0; 
                     })
                     return jobs
@@ -34,8 +34,8 @@ export default class SaltJobs extends SaltClient {
 
                 startDown: function(jobs){
                     jobs.sort(function(a,b) {
-                        if(a.properties.StartTime > b.properties.StartTime) return 1;
-                        if(a.properties.StartTime < b.properties.StartTime) return -1;
+                        if(new Date(a.properties.StartTime) > new Date(b.properties.StartTime)) return 1;
+                        if(new Date(a.properties.StartTime) < new Date(b.properties.StartTime)) return -1;
                         return 0; 
                     })
                     return jobs
