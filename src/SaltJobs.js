@@ -2,8 +2,8 @@ import axios from 'axios'
 import SaltClient from './SaltClient.js'
 
 export default class SaltJobs extends SaltClient {
-    constructor(auth,complete,active){
-        super(auth)
+    constructor(setup){
+        super(setup)
         this.sort = {
                 functionUp: function(jobs){
                     jobs.sort(function(a,b) {
@@ -22,7 +22,7 @@ export default class SaltJobs extends SaltClient {
                     })
                     return jobs
                 },
-
+                // TODO: This needs to use date objects and not just strings as JS's string comparison is broken
                 startUp: function(jobs){
                     jobs.sort(function(a,b) {
                         if(a.properties.StartTime < b.properties.StartTime) return 1;
@@ -59,9 +59,30 @@ export default class SaltJobs extends SaltClient {
                     return jobs
                 }
         }
+        // TODO: Search functionality
+        this.search = {
+            fun: function() {
+
+            },
+            tgt: function() {
+                
+            },
+            dateRange: function() {
+
+            },
+            user: function() {
+
+            },
+            result: function() {
+
+            },
+            all: function() {
+                
+            }
+        }
         this.jobs = {
-            active: new ActiveJobsHandler(auth,active),
-            complete: new CompleteJobsHandler(auth,complete),
+            active: new ActiveJobsHandler(setup.auth,setup.active),
+            complete: new CompleteJobsHandler(setup.auth,setup.complete,setup.timeScale),
         }
     }
 }
@@ -71,15 +92,6 @@ class QueryHandler {
             this.intervals = {}
             this.auth = auth
             this.data = data
-            this.onSuccess = (jobs) => {
-                this.waitingOnResponse = false
-                this.data.length = 0
-                this.data.push.apply(data, jobs)
-            }
-            this.onFailure = (err) => {
-                    console.debug(err)
-                    this.waitingOnResponse = false
-            }
         }
         startPoller(name,query,freqInMS) {
             this.intervals[name] = setInterval(query,freqInMS)
@@ -116,6 +128,16 @@ class QueryHandler {
 class ActiveJobsHandler extends QueryHandler {
     constructor(auth,data) {
         super(auth,data)
+        this.startPoller('init',this.get(),30000)
+        this.onSuccess = (jobs) => {
+            this.waitingOnResponse = false
+            this.data.length = 0
+            this.data.push.apply(data, jobs)
+        }
+        this.onFailure = (err) => {
+                console.debug(err)
+                this.waitingOnResponse = false
+        }
     }
     get() {
             this.waitingOnResponse = true
@@ -124,7 +146,7 @@ class ActiveJobsHandler extends QueryHandler {
                 this.onFailure
             )
     }
-    active_jobs_array (onSuccess, onFailure) {
+    active_jobs_array () {
         axios.post('https://' + this.auth.server + 
             ':' + this.auth.port + '/',{
             client: "runner",
@@ -137,13 +159,12 @@ class ActiveJobsHandler extends QueryHandler {
                 }
             })
         .then( (response) => {
-            var jobsArray = this.jobsToArray(response)
             this.handleServerErrorResponse(response)
+            var jobsArray = this.jobsToArray(response)
             this.onSuccess(jobsArray)
         })
         .catch((err) => {
-            console.debug(err)
-            this.onFailure()
+            this.onFailure(err)
         })
     }
     
@@ -151,11 +172,23 @@ class ActiveJobsHandler extends QueryHandler {
 
 class CompleteJobsHandler extends QueryHandler {
 
-    constructor(auth,data) {
+    constructor(auth,data,scale) {
         super(auth,data)
+        this.scale = scale
+        this.data = data
+        this.auth = auth
+        this.onSuccess = (jobs) => {
+            this.waitingOnResponse = false
+            this.data.length = 0
+            this.data.push.apply(data, jobs)
+        }
+        this.onFailure = (err) => {
+                console.debug(err)
+                this.waitingOnResponse = false
+        }
     }
 
-    list_jobs (start_time,end_time,onSuccess) {
+    list_jobs (start_time,end_time) {
                 axios.post('https://' + this.auth.server + 
                     ':' + this.auth.port + '/',{
                     client: "runner",
@@ -175,11 +208,9 @@ class CompleteJobsHandler extends QueryHandler {
                     this.onSuccess(jobsArray)
                 })
                 .catch((err) => {
-                    console.debug(err)
+                    this.onFailure(err)
                 })
     }
-
-    
 
     removeDuplicateJobs (jobs){
                 for(var index in jobs){
@@ -190,21 +221,7 @@ class CompleteJobsHandler extends QueryHandler {
                 return lookupTable
     }
 
-    getTwentyFourHours(onSuccess) {
-        var start_time = new Date(Date.now() - (24 /*Hours*/ (60 * (60 * 1000))))
-        var end_time = new Date(Date.now())
-        var start_time = start_time.toLocaleString()
-        var end_time = end_time.toLocaleString()
-
-        this.list_jobs(
-            start_time,
-            end_time,
-            onSuccess,
-            this.completedJobs.onFailure
-        )
-    }
-
-    getRecent(onSuccess) {
+    getRecent() {
         var start_time = new Date(Date.now() - 300000)
         var end_time = new Date(Date.now())
         var start_time = start_time.toLocaleString()
@@ -217,9 +234,11 @@ class CompleteJobsHandler extends QueryHandler {
         )
     }
 
-    getByDate(onSuccess, onFailure, start,end){
-        var start_time = start
-        var end_time = end
-        this.list_jobs(start_time, end_time, onSuccess, onFailure)
+    getByDate(){
+        this.waitingOnResponse = true
+        this.list_jobs(
+            this.scale.from.toLocaleString(),
+            this.scale.to.toLocaleString(), 
+            )
     }
 }

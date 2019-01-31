@@ -35,50 +35,24 @@
                 </b-nav-item>
                 <b-nav-item @click="refresh()">
                     <!--TODO: Fix this <i class="fa fa-undo" v-if="!refreshLock "></i> -->
-                    <i class="fa fa-spinner"></i>
-                    Refresh
+                    <i class="fa fa-spinner"> Refresh</i>
+                    
+                </b-nav-item >
+                <b-nav-item @click="changeTimeChoice()" id="timeControl">
+                    <!--TODO: Fix this <i class="fa fa-undo" v-if="!refreshLock "></i> -->
+                    <i class="fa fa-clock"> Time: {{ actionBar.time.choices[actionBar.time.choice] }}</i>
                 </b-nav-item>
-                <b-nav-item v-b-modal.filterModal><i class="fa fa-bars"></i> Open Filter List </b-nav-item>
+            </b-navbar-nav>
+            <b-navbar-nav class="ml-auto">
+                    <b-nav-form class="searchcontainer">
+                        <b-form-input v-model="actionBar.search" type="text" placeholder="Search jobs">
+                        </b-form-input>
+                    </b-nav-form>
             </b-navbar-nav>
             </b-collapse>
             <!-- Filters Modal Menu -->
-            <b-modal id="filterModal" title="Filters Menu">
-                    <strong>Job Window</strong>
-                    <b-form-group>
-                        From
-                        <datepicker v-model="timeWindow.from" :bootstrap-styling="true"></datepicker>
-                        To
-                        <datepicker v-model="timeWindow.to" :bootstrap-styling="true"></datepicker>
-                    </b-form-group>
-                    <strong>Applied:</strong>
-                    <ul>
-                        <li style="list-style:none" v-for="(filter, index) in filters" :key="index">
-                            <i class="fa" :class="{
-                                'fa-bullseye': filter['type'] == 'Target',
-                                'fa-wrench': filter['type'] == 'Function',
-                                'fa-clock': filter['type'] == 'Datetime',
-                            }"></i>
-                            {{ index }} {{ filter['action'] }} {{ filter['type'] }} with "{{ filter['value'] }}"
-                            <i style="color:red" class="fa fa-times" @click="filters.splice(index,1)"></i>
-                        </li>
-                    </ul>
-                        <strong>Add:</strong><br>
-                        <b-form-group>
-                            
-                            <b-dropdown :text="filterMenu.type">
-                                <b-dropdown-item @click="filterMenu.type = 'Function'">Function</b-dropdown-item>
-                                <b-dropdown-item @click="filterMenu.type = 'Target'">Target</b-dropdown-item>
-                                <b-dropdown-item @click="filterMenu.type = 'Arguments'">Arguments</b-dropdown-item>
-                                <b-dropdown-item @click="filterMenu.type = 'Daterange'">Daterange</b-dropdown-item>
-                            </b-dropdown>
-                            <b-input v-if="!(filterMenu.type == 'Daterange')" 
-                                    placeholder="String" v-model="filterMenu.value">
-                            </b-input>
-                            
-                            <b-btn :variant="this.filterMenu.variant" @click="addFilter">Add</b-btn>
-
-                        </b-form-group>
-            </b-modal>
+            
+            
         </b-navbar>
         <jobcreator></jobcreator>
         <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
@@ -96,7 +70,6 @@
 
 <script>
 import axios from 'axios'
-import Datepicker from 'vuejs-datepicker'
 import JobItem from './JobItem.vue'
 import JobPending from './JobPending.vue'
 import Spinner from '../Spinner.vue'
@@ -113,7 +86,6 @@ export default {
         'job-pending': JobPending,
         'jobcreator': JobCreator,
         'spinner': Spinner,
-        'datepicker': Datepicker
     },
     data() {
         return {
@@ -123,67 +95,72 @@ export default {
                 'active': [],
             },
             actionBar: {
-                sort: "startUp"
+                sort: "startUp",
+                time: {
+                    'from': (new Date(Date.now() - 360000 /*86400000*/)).toLocaleString(),
+                    'to': (new Date(Date.now())).toLocaleString(),
+                    'fromValid': 'secondary',
+                    'toValid': 'secondary',
+                    'choices':['10m','1hr','8hr','24hr','72hr','Custom'],
+                    'choice': 0
+                },
+                search: ""
             },
-            filteredJobs: [],
-            filters: [
-                {"type":"Function","value":"runner.jobs.list_jobs"}
-            ],
-            timeWindow: {
-                'from': new Date(Date.now() - 360000 /*86400000*/),
-                'to': new Date(Date.now())
-            },
-            filterMenu: {
-                "type": "Choose filter type", 
-                "value": null,
-                "action": "Include/Exclude",
-                "variant": "primary",
-            },
-            navSelection: 'Sorts',
             saltjobs: null,
-            setupInterval: false
+            setupInterval: false,
+            timeScale: this.createTimeRange('10m')
         }
     },
     created() {
         this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
-        this.saveDataToStorage()
+        this.saveHistoryToStorage()
     },
     methods: {
 
+        setupClients(){
+            if(this.connectedToApi()){
+                clearInterval(this.setupInterval)
+                this.saltjobs = new SaltJobs({
+                    'auth': this.state.auth,
+                    'complete': this.jobs.complete,
+                    'active': this.jobs.active,
+                    'timeScale': this.timeScale
+                })
+                if(!this.loadHistoryFromStorage()) {
+                    this.refresh()
+                }
+            }
+        },
+
         refresh(){
             this.saltjobs.jobs.active.get()
-            this.saltjobs.jobs.complete.getRecent()
+            this.saltjobs.jobs.complete.getByDate()
         },
+
         connectedToApi(){
             if(typeof(this.state.auth.status) == 'boolean')
                 return this.state.auth.status
         },
 
-        setupClients(){
-            if(this.connectedToApi()){
-                clearInterval(this.setupInterval)
-                this.saltjobs = new SaltJobs(this.state.auth,this.jobs.complete,this.jobs.active)
-                if(!this.loadJobsFromStorage()) {
-                    this.refresh()
-                }
-            }
-            else{
-            }
-           
+        loadHistoryFromServer: function() {
+            this.saltjobs.jobs.complete.getByDate()
         },
 
-        loadJobsFromStorage: function(){
+        loadHistoryFromStorage: function(){
             if(localStorage.getItem('jobsComplete')){
-                this.jobs.complete = JSON.parse(localStorage.getItem('jobsComplete'))
+                var jobs = JSON.parse(localStorage.getItem('jobsComplete'))
+                this.jobs.complete.length = 0
+                this.jobs.complete.push.apply(this.jobs.complete,jobs)
                 return true
             }
 
             else return false
         },
 
-        saveDataToStorage: function() {
+        saveHistoryToStorage: function() {
+            // TODO: Have this occur before any possible mutation. E.g. when api updates
             if(this.jobs.complete.length > 0){
                 var jobsComplete = JSON.stringify(this.jobs.complete)
                 localStorage.setItem('jobsComplete', jobsComplete)
@@ -223,47 +200,65 @@ export default {
                 this.jobs.complete = this.saltjobs.sort.targetDown(this.jobs.complete)
             }
         },
-        
-        addFilter: function() {
-            // If not enough info return right away
-            if(this.filterMenu['type'] == "Choose filter type" || 
-               this.filterMenu['value'].length == 0)
-            {    
-                this.filterMenu.variant = "danger"; return false
-            }
-            // Add filter to list
-            if(this.filterMenu['type'] != "Daterange"){
-                this.filters.push({
-                    'type':     this.filterMenu['type'],
-                    'value':   this.filterMenu['value'],
-                    'action':   this.filterMenu['action']})
-                this.filterMenu.variant = "success"
-            }
-            if (this.filterMenu.action == 'Daterange'){
-            }
-            
-        },
 
-        // TODO: Refactor this. Move to external library
-        filterJobs: function (){
-            var staging = this.jobs
-
-
-            for (var fi in this.filters){
-               
-                for (var j in staging){
-                    // If you match the filter you get ignored
-                   if (staging[j].properties[this.filters[fi].type].includes(this.filters[fi].value)){
-                       staging.splice(j,1)
-                   } 
+        hasValidDate: function(date){
+            try {
+                var test = new Date(date)
+                if(test instanceof Date && !isNaN(test)){
+                    return true
+                }
+                else {
+                    return false
                 }
             }
+            catch(err) {
+                console.debug(err)
+                return false
+            }
+        },
+
+        changeTimeChoice: function() {
+            // TODO: add +1 to timeChoice ad return to 0 when cycled
+            if (this.actionBar.time.choice >= (this.actionBar.time.choices.length - 2) ){
+                this.actionBar.time.choice = 0
+            }
+            else {
+                this.actionBar.time.choice += 1
+            }
+            var newtime = this.createTimeRange(this.actionBar.time.choices[this.actionBar.time.choice])
+            this.timeScale.from = newtime.from
+            this.timeScale.to = newtime.to
 
         },
-    },
-    computed: {
-        
-        
+
+        createCustomTimeRange: function() {
+            this.actionBar.time.choice = this.actionBar.time.choices.length - 1
+        },
+
+        createTimeRange: function(choice) {
+            let convertToMilliseconds = {
+                '10m': 600000,
+                '1hr': 3.6e+6,
+                '8hr': 2.88e+7,
+                '24hr': 8.64e+7,
+                '72hr': 2.592e+8,
+                '1wk': 6.048e+8
+            }
+            var timeObj =
+            {
+                'from': (new Date(Date.now() - convertToMilliseconds[choice])),
+                'to': (new Date(Date.now()))
+            }
+            if (this.hasValidDate(timeObj.from) && this.hasValidDate(timeObj.to)){
+                return timeObj
+            }
+            else {
+                throw {
+                    'name': "DateFormatError",
+                    "message": "Date validation failed"
+                }
+            }
+        },
     },
 }
 
@@ -292,17 +287,9 @@ export default {
     width: 100%;
     border-radius:0
 }
-
 #collapseNewFilterButton{
     width:100%;
     border-radius: 0;
-}
-.validate-success{
-    border-color: rgb(103, 165, 103);
-}
-
-.validate-fail{
-    border-color: red;
 }
 
 </style>

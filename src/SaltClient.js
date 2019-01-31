@@ -2,9 +2,9 @@ import axios from "axios";
 
 export default class SaltClient {
 
-    constructor(auth) {
-        if(auth == undefined){throw {name:"AuthError",message:"Authentication error creating salt client."}}
-        this.auth = auth
+    constructor(setup) {
+        if(setup.auth == undefined){throw {name:"AuthError",message:"Authentication error creating salt client."}}
+        this.auth = setup.auth
     }
 
     createBaseURL(server, port) {
