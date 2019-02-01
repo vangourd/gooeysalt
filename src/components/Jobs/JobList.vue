@@ -45,7 +45,11 @@
             </b-navbar-nav>
             <b-navbar-nav class="ml-auto">
                     <b-nav-form class="searchcontainer">
-                        <b-form-input v-model="actionBar.search" type="text" placeholder="Search jobs">
+                        <b-form-input
+                            @keydown.prevent @change="searchJobs"
+                            v-model="actionBar.search.raw" 
+                            type="text" 
+                            placeholder="Search jobs">
                         </b-form-input>
                     </b-nav-form>
             </b-navbar-nav>
@@ -104,7 +108,10 @@ export default {
                     'choices':['10m','1hr','8hr','24hr','72hr','Custom'],
                     'choice': 0
                 },
-                search: ""
+                search: {
+                    'raw': "",
+                    'obj': null
+                }
             },
             saltjobs: null,
             setupInterval: false,
@@ -259,6 +266,37 @@ export default {
                 }
             }
         },
+
+        searchJobs: function() {
+            this.actionBar.search.obj = this.parseSearchQuery(this.actionBar.search.raw)
+        },
+
+        // TODO: Need to handle situation when no match is found
+        parseSearchQuery: function(query) {
+            // function
+            var matches = []
+            var result = {}
+            matches.push({"name":"fun", "reg": new RegExp(/fun:(\S+)/) })
+            matches.push({"name":"target", "reg": new RegExp(/tgt:(\S+)/) })
+            matches.push({"name":"start", "reg": new RegExp(/start:(\S+)/) })
+            matches.push({"name":"user", "reg": new RegExp(/user:(\S+)/) })
+            matches.push({"name":"from", "reg": new RegExp(/from:(\S+)/) })
+            matches.push({"name":"to", "reg": new RegExp(/to:(\S+)/) })
+
+            for (var i in matches){
+                if(matches[i].reg.test(query)){
+                    result[matches[i].name] = matches[i].reg.exec(query)[1]
+                }
+                else {
+                    result[matches[i].name] = false
+                }
+            }
+
+            return result
+            
+        },
+
+        
     },
 }
 
