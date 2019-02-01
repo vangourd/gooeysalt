@@ -269,6 +269,8 @@ export default {
 
         searchJobs: function() {
             this.actionBar.search.obj = this.parseSearchQuery(this.actionBar.search.raw)
+            this.saltjobs.jobs.complete.search(this.actionBar.search.obj)
+            this.sortByStart()
         },
 
         // TODO: Need to handle situation when no match is found
@@ -276,16 +278,16 @@ export default {
             // function
             var matches = []
             var result = {}
-            matches.push({"name":"fun", "reg": new RegExp(/fun:(\S+)/) })
-            matches.push({"name":"target", "reg": new RegExp(/tgt:(\S+)/) })
-            matches.push({"name":"start", "reg": new RegExp(/start:(\S+)/) })
-            matches.push({"name":"user", "reg": new RegExp(/user:(\S+)/) })
-            matches.push({"name":"from", "reg": new RegExp(/from:(\S+)/) })
-            matches.push({"name":"to", "reg": new RegExp(/to:(\S+)/) })
+            matches.push({"name":"fun", "reg": new RegExp(/fun:(\S+)/) ,"propname":"Function"})
+            matches.push({"name":"target", "reg": new RegExp(/tgt:(\S+)/),"propname":"Target" })
+            matches.push({"name":"start", "reg": new RegExp(/start:(\S+)/),"propname":"Start" })
+            matches.push({"name":"user", "reg": new RegExp(/user:(\S+)/) ,"propname":"User"})
+            matches.push({"name":"from", "reg": new RegExp(/from:(\S+)/) ,"propname":"from"})
+            matches.push({"name":"to", "reg": new RegExp(/to:(\S+)/) , "propname":"to"})
 
             for (var i in matches){
                 if(matches[i].reg.test(query)){
-                    result[matches[i].name] = matches[i].reg.exec(query)[1]
+                    result[matches[i].name] = {"propname": matches[i].propname, "value": matches[i].reg.exec(query)[1]}
                 }
                 else {
                     result[matches[i].name] = false

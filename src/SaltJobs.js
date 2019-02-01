@@ -60,26 +60,6 @@ export default class SaltJobs extends SaltClient {
                 }
         }
         // TODO: Search functionality
-        this.search = {
-            fun: function() {
-
-            },
-            tgt: function() {
-                
-            },
-            dateRange: function() {
-
-            },
-            user: function() {
-
-            },
-            result: function() {
-
-            },
-            all: function() {
-                
-            }
-        }
         this.jobs = {
             active: new ActiveJobsHandler(setup.auth,setup.active),
             complete: new CompleteJobsHandler(setup.auth,setup.complete,setup.timeScale),
@@ -240,5 +220,21 @@ class CompleteJobsHandler extends QueryHandler {
             this.scale.from.toLocaleString(),
             this.scale.to.toLocaleString(), 
             )
+    }
+
+    search(queries){
+        var filtered = []
+        for(var query in queries){
+            if(!queries[query]){continue}
+            for(var jid in this.data){
+                if(this.data[jid].properties[queries[query].propname].includes(queries[query].value)){
+                    filtered.push(this.data[jid])
+                }
+            }
+        }
+        if(filtered.length > 0){
+            this.data.length = 0
+            this.data.push.apply(this.data,filtered)
+        }
     }
 }
