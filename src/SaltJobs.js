@@ -1,5 +1,5 @@
 import axios from 'axios'
-import SaltClient from './SaltClient.js'
+import {SaltClient, QueryHandler} from './SaltClient.js'
 
 export default class SaltJobs extends SaltClient {
     constructor(setup){
@@ -59,52 +59,13 @@ export default class SaltJobs extends SaltClient {
                     return jobs
                 }
         }
-        // TODO: Search functionality
+        // TODO: Migrate Search functionality into library
         this.jobs = {
             active: new ActiveJobsHandler(setup.auth,setup.active),
             complete: new CompleteJobsHandler(setup.auth,setup.complete,setup.timeScale),
         }
     }
 }
-class QueryHandler {
-        constructor(auth,data){
-            this.waitingOnResponse = false
-            this.intervals = {}
-            this.auth = auth
-            this.data = data
-        }
-        startPoller(name,query,freqInMS) {
-            this.intervals[name] = setInterval(query,freqInMS)
-        }
-        stopPoller(name) {
-            clearInterval(this.intervals[name])
-        }
-        jobsToArray (response){
-                var query = response['data']['return'][0]
-                var jobsArray = []
-                for (var jid in query){
-                    jobsArray.push({'jid':jid,'properties': query[jid]})
-                }
-                return jobsArray
-        }           
-        handleServerErrorResponse(response) {
-                if(typeof(response['data']['return'][0]) == 'undefined'){
-                    throw {name:"EmptyResponse",message:response}
-                }
-                if(response['data']['return'].includes("Exception occurred")){
-                        throw {name:"ServerError",message:response['data']['return'][0]}
-                }
-                if(typeof(response['data']['return'][0]) == 'object'){
-                    if(Object.keys(response['data']['return'][0]).length == 0){
-                        throw {name:"EmptyResponse", message:response}
-                    }
-                }
-                else{
-                    return true
-                }
-        }
-}
-
 class ActiveJobsHandler extends QueryHandler {
     constructor(auth,data) {
         super(auth,data)
@@ -147,6 +108,14 @@ class ActiveJobsHandler extends QueryHandler {
             this.onFailure(err)
         })
     }
+    jobsToArray (response){
+                var query = response['data']['return'][0]
+                var jobsArray = []
+                for (var jid in query){
+                    jobsArray.push({'jid':jid,'properties': query[jid]})
+                }
+                return jobsArray
+    }   
     
 }
 
@@ -237,4 +206,12 @@ class CompleteJobsHandler extends QueryHandler {
             this.data.push.apply(this.data,filtered)
         }
     }
+    jobsToArray (response){
+                var query = response['data']['return'][0]
+                var jobsArray = []
+                for (var jid in query){
+                    jobsArray.push({'jid':jid,'properties': query[jid]})
+                }
+                return jobsArray
+    }   
 }
