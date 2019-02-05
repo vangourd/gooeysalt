@@ -34,7 +34,7 @@
         </b-navbar-nav>
         </b-collapse>
     </b-navbar>
-    <div v-if="minions.view" v-for="minion in minions.view" :key="minion.name">
+    <div v-for="minion in minions.data" :key="minion.name">
         <b-card v-if="minion.properties">
             <b-row>
                 <b-col cols="10">
@@ -87,7 +87,7 @@ export default {
            actionBar: {
                'sort': 'nameSortDown'
            },
-           saltminions: false,
+           minions: false,
            setupInterval: false,
            apilimit: Date.now()
         }
@@ -100,9 +100,8 @@ export default {
         setupClients: function() {
             if(this.connectedToApi()){
                 clearInterval(this.setupInterval)
-                this.saltminions = new SaltMinions({
-                    "auth": this.state.auth,
-                    "data": this.minions
+                this.minions = new SaltMinions({
+                    "auth": this.state.auth
                 })
                 if(!this.loadMinionsFromStorage()) {
                     this.loadMinionsFromServer()
@@ -111,7 +110,7 @@ export default {
         },
 
         loadMinionsFromServer: function(){
-            this.saltminions.minions.get()
+            this.minions.get()
         },
 
         loadMinionsFromStorage: function(){
@@ -141,33 +140,33 @@ export default {
 
             if(this.actionBar.sort === 'nameUp'){
                 this.actionBar.sort = 'nameDown'
-                this.minions.view =  this.saltminions.sort.nameDown(this.minions.view)
+                this.minions.view =  this.minions.sort.nameDown(this.minions.view)
             }
             else{
                 this.actionBar.sort = 'nameUp'
-                this.minions.view = this.saltminions.sort.nameUp(this.minions.view)
+                this.minions.view = this.minions.sort.nameUp(this.minions.view)
             }
         },
 
         sortByResponse () {
             if(this.actionBar.sort === 'responseUp'){
                 this.actionBar.sort = 'responseDown'
-                this.minions.view = this.saltminions.sort.responseDown(this.minions.view)
+                this.minions.view = this.minions.sort.responseDown(this.minions.view)
             }
             else{
                 this.actionBar.sort = 'responseUp'
-                this.minions.view = this.saltminions.sort.responseUp(this.minions.view)
+                this.minions.view = this.minions.sort.responseUp(this.minions.view)
             }
         },
 
         sortByOS () {
             if(this.actionBar.sort === 'osUp'){
                 this.actionBar.sort = 'osDown'
-                this.minions.view = this.saltminions.sort.osDown(this.minions.view)
+                this.minions.view = this.minions.sort.osDown(this.minions.view)
             }
             else{
                 this.actionBar.sort = 'osUp'
-                this.minions.view = this.saltminions.sort.osUp(this.minions.view)
+                this.minions.view = this.minions.sort.osUp(this.minions.view)
             }
         }, 
     },

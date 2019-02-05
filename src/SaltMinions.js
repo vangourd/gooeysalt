@@ -1,11 +1,21 @@
 import axios from 'axios'
-import { SaltClient, QueryHandler } from './SaltClient.js'
+import { QueryHandler } from './SaltClient.js'
 
-export default class SaltMinions extends SaltClient {
+export default class SaltMinions extends QueryHandler {
     constructor(setup){
-        super(setup)
-        this.data = setup.data
-        this.minions = new MinionQueryHandler(setup)
+        super(setup.auth)
+        this.data = []
+        this.auth = setup.auth
+
+        this.onSuccess = (minions) => {
+            this.waitingOnResponse = false
+            this.data.length = 0
+            this.data.push.apply(this.data, minions)
+        }
+        this.onFailure = (err) => {
+            console.debug(err)
+            this.waitingOnResponse = false
+        }
         this.sort = {
             nameUp: function(minions) {
                 minions.sort(function(a,b) {
@@ -58,23 +68,6 @@ export default class SaltMinions extends SaltClient {
         }
 
     }
-}
-class MinionQueryHandler extends QueryHandler {
-    constructor(setup){
-        super(setup.auth,setup.data)
-        this.data = setup.data
-        this.auth = setup.auth
-        this.onSuccess = (minions) => {
-            console.debug(this)
-            this.waitingOnResponse = false
-            this.data.length = 0
-            this.data.push.apply(this.data, minions)
-        }
-        this.onFailure = (err) => {
-            console.debug(err)
-            this.waitingOnResponse = false
-        }
-    }
     minions_status() {
         axios.post('https://' + this.auth.server + 
                     ':' + this.auth.port + '/',{
@@ -97,7 +90,26 @@ class MinionQueryHandler extends QueryHandler {
                 })
     }
     minions_list() {
-      
+        axios.post('https://' + this.auth.server + 
+            ':' + this.auth.port + '/',{
+            client: "runner",
+            fun: "grains.get",
+            args: ["os"]
+            },
+            {headers: {
+                    'x-auth-token': this.auth.token,
+                    'content-type': 'application/json',
+                    'accept': 'application/json'
+                }
+            })
+            .then((response) => {
+            this.handleServerErrorResponse(response)
+            var minions = this.intoArray(response)
+            this.onSuccess(minions)
+        })
+        .catch((err) => {
+            this.onFailure(err)
+        })
     }
     get() {
         this.minions_status()
@@ -110,4 +122,13 @@ class MinionQueryHandler extends QueryHandler {
         }
         return minionArray
     }
+}
+class MinionQueryHandler extends QueryHandler {
+    constructor(setup){
+        super(setup.auth,setup.data)
+        this.data = setup.data
+        this.auth = setup.auth
+        
+    }
+    
 }
