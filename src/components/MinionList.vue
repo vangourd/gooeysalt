@@ -32,39 +32,26 @@
                 <i class="fa fa-sync-alt"> Refresh</i>
             </b-nav-item>
         </b-navbar-nav>
+        <b-navbar-nav class="ml-auto">
+                    <b-nav-form class="searchcontainer">
+                        <b-form-input
+                            placeholder="Search">
+                        </b-form-input>
+                    </b-nav-form>
+        </b-navbar-nav>
         </b-collapse>
     </b-navbar>
-    <div v-for="minion in minions.data" :key="minion.name">
-        <b-card v-if="minion.properties">
-            <b-row>
-                <b-col cols="10">
-                    <!-- Name and OS Type -->
-                    <span>
-                        <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
-                        <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
-                        <strong>{{ minion.properties.host }}</strong><br>
-                        {{ minion.properties.osfullname}}<br>
-                        {{ minion.properties.productname }}
-                        {{ minion.properties.cpu_model }}
-                    </span><br>
-                    <!-- Properties -->
-                    <span>
-                        <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
-                    </span>
-                </b-col>
-                <b-col cols="2">
-                    <b-btn class="fa fa-terminal" variant="light" :href="'ssh://' + minion.properties.fqdn"></b-btn>
-                    <b-btn class="fa fa-desktop" variant="light" :href="'rdp://' + minion.properties.fqdn"></b-btn> <br>
-                    <b-btn class="fa fa-link" variant="light" target="_blank" :href="'http://' + minion.properties.fqdn"></b-btn>
-                    <b-btn class="fa fa-tasks" variant="light"></b-btn>
-                </b-col>
-            </b-row>
-        </b-card>
-        <b-card class="minioncard text-muted" v-if="minion.properties == null">
-            <i class="fa fa-bed"></i>
-            <strong>{{ minion.name }}</strong>
-        </b-card>
-    </div>
+        <div class="listView" v-for="minion in minions.data" :key="minion.name">
+                <b-card class="minionCard" v-if="minion.properties">
+                            <!-- Name and OS Type -->
+                    <i class="fa fa-circle statusindicator" v-if="minion.status == 'up'" ></i>
+                    <i class="fa fa-bed" v-if="minion.status == 'down '"></i>
+                    <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
+                    <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
+                        <strong>{{ minion.properties.fqdn }}</strong>
+                    <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
+                </b-card>
+        </div>
     <spinner v-if="minions.length == 0"></spinner>
 </b-col>
 
@@ -89,7 +76,9 @@ export default {
            },
            minions: false,
            setupInterval: false,
-           apilimit: Date.now()
+           apilimit: Date.now(),
+           slideposition: 12,
+           currentminion: "Test"
         }
     },
     created() {
@@ -169,8 +158,18 @@ export default {
                 this.minions.view = this.minions.sort.osUp(this.minions.view)
             }
         }, 
+        closeSlider(){
+            this.slideposition = 12
+        },
+        changeSlider(minion) {
+            this.currentminion = minion
+            if (this.slideposition == 12){
+                this.slideposition = 5
+            }
+        }
     },
     beforeDestroy() {
+        this.saveMinionsToStorage()
         clearInterval(this.timer)
     },
 }
@@ -179,5 +178,18 @@ export default {
 <style>
 #minionlist {
     padding-right:0px
+}
+.statusindicator {
+    color:green;
+}
+.listView {
+    -webkit-transition: all 0.6s ease-in-out;
+    -moz-transition: all 0.6s ease-in-out;
+    -o-transition: all 0.6s ease-in-out;
+    transition: all 0.6s ease-in-out;
+    cursor: pointer;
+}
+.minionCard:hover {
+    background-color:whitesmoke;
 }
 </style>
