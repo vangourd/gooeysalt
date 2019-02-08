@@ -78,8 +78,8 @@ import JobItem from './JobItem.vue'
 import JobPending from './JobPending.vue'
 import Spinner from '../Spinner.vue'
 import JobCreator from './JobCreator.vue'
-import SaltClient from '../../SaltClient.js'
-import SaltJobs from '../../SaltJobs.js'
+import SaltClient from 'src/salt/SaltClient.js'
+import SaltJobs from 'src/salt/SaltJobs.js'
 
 
 export default {

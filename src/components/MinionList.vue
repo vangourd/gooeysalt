@@ -60,7 +60,7 @@
 <script>
 import axios from 'axios'
 import Spinner from './Spinner.vue'
-import SaltMinions from '../SaltMinions.js'
+import SaltMinions from 'src/salt/SaltMinions.js'
 
 export default {
     name: 'minionlist',
