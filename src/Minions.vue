@@ -1,8 +1,8 @@
 <template>
-<b-col id="minionlist">
+<b-container fluid id="minionlist" class="mx-0 px-0">
     <b-navbar toggleable="md" type="dark" variant="dark">
         <b-navbar-toggle target="minions_collapse"></b-navbar-toggle>
-        <b-navbar-brand class="fa fa-cubes"> Minions</b-navbar-brand>
+        <b-navbar-brand class="fa fa-cubes" @click="$router.push({'path': 'jobs'})"> Minions</b-navbar-brand>
         <b-collapse is-nav id="minions_collapse">
         <b-navbar-nav>
             <b-nav-text> Sort by:</b-nav-text>
@@ -28,7 +28,7 @@
                     'fab fa-windows': !this.actionBar.sort.includes('os')
                 }"> OS</i>
             </b-nav-item>`
-            <b-nav-item @click="loadMinionsFromServer" right>
+            <b-nav-item @click="refresh" right>
                 <i class="fa fa-sync-alt"> Refresh</i>
             </b-nav-item>
         </b-navbar-nav>
@@ -38,7 +38,13 @@
                             placeholder="Search">
                         </b-form-input>
                     </b-nav-form>
+            <router-link tag="b-nav-item" to="/logout">
+                <b-nav-item>
+                    Logout {{ auth.username }} <i class="fa fa-user"></i>
+                </b-nav-item>
+            </router-link>
         </b-navbar-nav>
+        
         </b-collapse>
     </b-navbar>
         <div class="listView" v-for="minion in minions.data" :key="minion.name">
@@ -53,78 +59,46 @@
                 </b-card>
         </div>
     <spinner v-if="minions.length == 0"></spinner>
-</b-col>
-
+</b-container>
 </template>
 
 <script>
 import axios from 'axios'
-import Spinner from './Spinner.vue'
-import SaltMinions from 'src/salt/SaltMinions.js'
+import Spinner from 'components/Spinner.vue'
+import { MinionsHandler } from 'src/salt/'
 
 export default {
     name: 'minionlist',
+    props: ['minion'],
     components: {
         'spinner': Spinner
     },
     data() {
         return {
-           state: this.$root.sharedState.state,
-           minions: [],
-           actionBar: {
-               'sort': 'nameSortDown'
-           },
-           minions: false,
-           setupInterval: false,
-           apilimit: Date.now(),
-           slideposition: 12,
-           currentminion: "Test"
+            auth: this.$root.auth,
+            minions: new MinionsHandler(this.$root.auth),
+            actionBar: {
+                'sort': 'nameSortDown'
+            },
+            apilimit: Date.now(),
+            slideposition: 12,
+            currentminion: "Test"
+        }
+    },
+    computed: {
+        minionsdata: function () {
+            return this.minions.data
         }
     },
     created() {
-        this.setupInterval = setInterval(this.setupClients, 2000)
+        if (this.auth.status === false){
+            this.$router.push({'path':'/login'})
+        }
     },
     methods: {
-
-        setupClients: function() {
-            if(this.connectedToApi()){
-                clearInterval(this.setupInterval)
-                this.minions = new SaltMinions({
-                    "auth": this.state.auth
-                })
-                if(!this.loadMinionsFromStorage()) {
-                    this.loadMinionsFromServer()
-                }
-            }
+        refresh() {
+            this.minions.clearAndGet()
         },
-
-        loadMinionsFromServer: function(){
-            this.minions.get()
-        },
-
-        loadMinionsFromStorage: function(){
-            if(localStorage.getItem('minions')){
-                var minions = JSON.parse(localStorage.getItem('minions'))
-                this.minions.data.length = 0
-                this.minions.data.push.apply(this.minions.data,minions)
-                return true
-            }
-
-            else return false
-        },
-
-        saveMinionsToStorage: function() {
-            if(this.minions.data.length > 0){
-                var minions = JSON.stringify(this.minions.data)
-                localStorage.setItem('minions', minions)
-            }
-        },
-
-        connectedToApi(){
-            if(typeof(this.state.auth.status) == 'boolean')
-                return this.state.auth.status
-        },
-        
         sortByName () {
 
             if(this.actionBar.sort === 'nameUp'){
@@ -167,10 +141,6 @@ export default {
                 this.slideposition = 5
             }
         }
-    },
-    beforeDestroy() {
-        this.saveMinionsToStorage()
-        clearInterval(this.timer)
     },
 }
 </script>

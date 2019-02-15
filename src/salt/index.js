@@ -1,4 +1,7 @@
-export * from 'SaltClient.js'
-export * from 'SaltJobs.js'
-export * from 'SaltMinions.js'
-export * from 'SaltStates.js'
+import Auth from './Auth.js'
+import {
+    MinionsHandler,
+    ActiveJobsHandler,
+    CompleteJobsHandler,StatesHandler} from './Queries.js'
+
+export {Auth, MinionsHandler, ActiveJobsHandler, CompleteJobsHandler, StatesHandler}

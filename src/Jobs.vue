@@ -1,8 +1,8 @@
 <template>
-    <b-col id="joblist">
+    <b-container fluid id="joblist" class="mx-0 px-0">
         <b-navbar id="jobsActionBar" toggleable="sm" type="dark" variant="dark">
             <b-navbar-toggle target="jobs_collapse"></b-navbar-toggle>
-            <b-navbar-brand class="fa fa-tasks"> Jobs</b-navbar-brand>
+            <b-navbar-brand @click="$router.push({'path': 'states'})" class="fa fa-tasks"> Jobs</b-navbar-brand>
             <b-collapse is-nav id="jobs_collapse">
             <b-navbar-nav>
                 <b-nav-item @click="sortByFunction()">
@@ -64,20 +64,20 @@
         <job-item v-if="jobs.complete.length > 0" v-for="job in jobs.complete" :job="job" :key="job.jid">
         </job-item>
         <div id="statusList">
-            <spinner v-if="jobs.complete.length == 0 && this.state.auth.status == true"></spinner>
-            <b-alert id="authWarning" variant="warning" v-if=" this.state.auth.status == false">
+            <spinner v-if="jobs.complete.length == 0 && this.salt.auth.status == true"></spinner>
+            <b-alert id="authWarning" variant="warning" v-if=" this.salt.auth.status == false">
                 You are not authenticated
             </b-alert>
         </div>
-    </b-col>
+    </b-container>
 </template>
 
 <script>
 import axios from 'axios'
-import JobItem from './JobItem.vue'
-import JobPending from './JobPending.vue'
+import JobItem from 'components/Jobs/JobItem.vue'
+import JobPending from 'components/Jobs/JobPending.vue'
 import Spinner from 'components/Spinner.vue'
-import JobCreator from './JobCreator.vue'
+import JobCreator from 'components/Jobs/JobCreator.vue'
 import SaltClient from 'src/salt/SaltClient.js'
 import SaltJobs from 'src/salt/SaltJobs.js'
 
@@ -120,6 +120,9 @@ export default {
         }
     },
     created() {
+        if (this.salt && this.salt.auth.status === false){
+            this.$router.push({'path':'/login'})
+        }
         this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
@@ -128,10 +131,9 @@ export default {
     methods: {
 
         setupClients(){
-            if(this.connectedToApi()){
                 clearInterval(this.setupInterval)
                 this.saltjobs = new SaltJobs({
-                    'auth': this.state.auth,
+                    'auth': this.salt.auth,
                     'complete': this.jobs.complete,
                     'active': this.jobs.active,
                     'timeScale': this.timeScale
@@ -139,7 +141,6 @@ export default {
                 if(!this.loadHistoryFromStorage()) {
                     this.refresh()
                 }
-            }
         },
 
         refresh(){
@@ -148,8 +149,7 @@ export default {
         },
 
         connectedToApi(){
-            if(typeof(this.state.auth.status) == 'boolean')
-                return this.state.auth.status
+            return salt.auth.status
         },
 
         loadHistoryFromServer: function() {
