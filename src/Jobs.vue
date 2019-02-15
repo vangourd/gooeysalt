@@ -78,8 +78,7 @@ import JobItem from 'components/Jobs/JobItem.vue'
 import JobPending from 'components/Jobs/JobPending.vue'
 import Spinner from 'components/Spinner.vue'
 import JobCreator from 'components/Jobs/JobCreator.vue'
-import SaltClient from 'src/salt/SaltClient.js'
-import SaltJobs from 'src/salt/SaltJobs.js'
+import { JobsHandler } from 'src/salt/'
 
 
 export default {
