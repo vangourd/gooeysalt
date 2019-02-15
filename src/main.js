@@ -46,7 +46,19 @@ const router = new VueRouter({
 
 // STATE Object
 
-var auth = new Auth()
+if (localStorage.getItem('auth')){
+  var auth = JSON.parse(localStorage.getItem('auth'))
+}
+else {
+  var auth = new Auth()
+}
+
+window.onbeforeunload = function() {
+  if(auth.status === true){
+    localStorage.setItem('auth',JSON.stringify(auth))
+  }
+}
+
 
 var store = {
   debug: 'debug',
@@ -62,6 +74,6 @@ new Vue({
   data: {
     sharedState: store,
     auth: auth,
-  }
+  },
 })
 
