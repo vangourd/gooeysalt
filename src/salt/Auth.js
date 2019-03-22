@@ -82,6 +82,32 @@ export default class Auth {
                return true
            } 
         }
+        this.export = function () {
+            return {
+                'connected': connected,
+                'token': this.getToken(),
+                'expire': expire,
+                'perms': perms,
+                'server': this.server,
+                'port': this.port,
+                'eauth': this.eauth,
+                'waiting': this.waiting,
+                'status': this.status
+            }
+        }
+        this.import = function(info) {
+            if(info.expire < (new Date).getTime()){
+                connected = info.connected,
+                token = info.token,
+                expire = info.expire,
+                perms = info.perms,
+                this.server = info.server,
+                this.port = info.port,
+                this.eauth = info.eauth,
+                this.waiting = info.waiting,
+                this.status = info.status
+            }
+        }
     }
     sendLoginPost (password,success,failure){
             axios.post('https://' + this.server + 

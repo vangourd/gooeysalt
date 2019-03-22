@@ -90,11 +90,6 @@ export default {
             return this.minions.data
         }
     },
-    created() {
-        if (this.auth.status === false){
-            this.$router.push({'path':'/login'})
-        }
-    },
     methods: {
         refresh() {
             this.minions.clearAndGet()

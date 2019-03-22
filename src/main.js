@@ -44,18 +44,9 @@ const router = new VueRouter({
   routes
 });
 
-// STATE Object
-
-if (localStorage.getItem('auth')){
-  var auth = JSON.parse(localStorage.getItem('auth'))
-}
-else {
-  var auth = new Auth()
-}
-
 window.onbeforeunload = function() {
   if(auth.status === true){
-    localStorage.setItem('auth',JSON.stringify(auth))
+    localStorage.setItem('auth',JSON.stringify(auth.export()))
   }
 }
 
@@ -72,8 +63,26 @@ new Vue({
   router,
   render: h => h(App),
   data: {
-    sharedState: store,
-    auth: auth,
+    auth: new Auth(),
   },
+  methods: {
+    loadFromStorage: function(){
+      console.debug('loadFromStorage ')
+      let fromStorage = JSON.parse(localStorage.getItem('auth'))
+      if(fromStorage){
+        this.auth.import(fromStorage)
+        return true
+      }
+      return false
+    }
+  },
+  created() {
+    if (!this.auth.status){
+      if(this.loadFromStorage){
+        this.$router.push({'path':'/minions'})
+      }
+    }
+    this.$router.push({'path':'/login'})
+  }
 })
 

@@ -92,7 +92,6 @@ export default {
     },
     data() {
         return {
-            state: this.$root.sharedState.state,
             salt: this.$root.salt,
             jobs: {
                 'complete': [],
