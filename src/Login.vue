@@ -11,6 +11,7 @@
                 <b-input placeholder="Password" v-model="password" type="password"></b-input>
                 <div v-show="settingsOpen">
                     <label>Server Address</label>
+                    <h2>Test: {{ this.$store.state.count }} </h2>
                     <b-input v-model="auth.server"></b-input>
                     <label>Server Port</label>
                     <b-input v-model="auth.port"></b-input>

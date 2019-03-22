@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import Vuex from 'vuex'
 import App from './App.vue'
 import BootstrapVue from 'bootstrap-vue'
 import { Auth } from 'src/salt/'
@@ -8,9 +9,20 @@ import Jobs from './Jobs.vue'
 import States from './States.vue'
 import Login from './Login.vue'
 import Logout from './Logout.vue'
+import { auth, jobs, minions, statefiles } from 'src/store'
 
 Vue.use(VueRouter)
+Vue.use(Vuex)
 Vue.use(BootstrapVue)
+
+const store = new Vuex.Store({
+  modules: {
+    auth: auth,
+    jobs: jobs,
+    minions: minions,
+    statefiles: statefiles,
+  }
+})
 
 const routes = [{
   path: '/',
@@ -50,17 +62,17 @@ window.onbeforeunload = function() {
   }
 }
 
-
-var store = {
+/*var store = {
   debug: 'debug',
   state: {
     current_view: 'jobs'
   },
-}
+}*/
 
 new Vue({
   el: '#app',
   router,
+  store,
   render: h => h(App),
   data: {
     auth: new Auth(),
