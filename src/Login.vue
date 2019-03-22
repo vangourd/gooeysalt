@@ -7,11 +7,11 @@
         <b-row id="loginform">
             <b-col cols="4" class="mx-auto mt-5">
                 <b-form-group>
+                <h1>{{ this.$store.state.auth.connected }}</h1>
                 <b-input placeholder="Username" v-model="auth.username"></b-input>
                 <b-input placeholder="Password" v-model="password" type="password"></b-input>
                 <div v-show="settingsOpen">
                     <label>Server Address</label>
-                    <h2>Test: {{ this.$store.state.count }} </h2>
                     <b-input v-model="auth.server"></b-input>
                     <label>Server Port</label>
                     <b-input v-model="auth.port"></b-input>

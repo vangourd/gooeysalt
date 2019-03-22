@@ -13,6 +13,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "bootstrap-vue": "^2.0.0-rc.11",
+    "eslint": "^5.15.3",
     "slideout": "^1.0.1",
     "vue": "^2.5.11",
     "vue-cli": "^2.9.6",
