@@ -73,7 +73,6 @@ export default {
     },
     data() {
         return {
-            auth: this.$store.state.auth,
             actionBar: {
                 'sort': 'minionsNameDown'
             },
@@ -81,7 +80,15 @@ export default {
             slideposition: 12,
         }
     },
+    created() {
+        if(!this.auth.authorized){
+            this.$router.push('login')
+        }
+    },
     computed: {
+        auth: function() {
+            return this.$store.state.auth
+        },
         minions: function() {
             return this.$store.state.minions.all
         }

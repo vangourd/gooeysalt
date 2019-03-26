@@ -24,6 +24,7 @@ export const auth = {
             state.token = data.token
             state.expire = data.expire
             state.perms = data.perms
+            localStorage.setItem('auth', JSON.stringify(state))
         },
         sessionClear (state) {
             state.connected = state.authorized = state.token = state.expire = state.perms = null
@@ -38,6 +39,14 @@ export const auth = {
             clearInterval(state.interval)
             state.interval = int
         },
+        loadAuthFromStorage (state,local) {
+            state.connected = local.connected
+            state.authorized = local.authorized
+            state.username = local.username
+            state.token = local.token
+            state.expire = local.expire
+            state.perms = local.perms
+        }
     },
     actions: {
         serverHeartBeat(context) {

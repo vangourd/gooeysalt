@@ -40,6 +40,11 @@ import axios from 'axios'
 
 export default {
     name: 'login',
+    created(){
+        if(this.auth.authorized){
+            this.$router.push('minions')
+        }
+    },
     data() {
         return{
             settingsOpen: false,
