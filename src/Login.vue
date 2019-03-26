@@ -7,25 +7,24 @@
         <b-row id="loginform">
             <b-col cols="4" class="mx-auto mt-5">
                 <b-form-group>
-                <h1>{{ this.$store.state.auth.connected }}</h1>
-                <b-input placeholder="Username" v-model="auth.username"></b-input>
+                <b-input placeholder="Username" v-model="username" ></b-input>
                 <b-input placeholder="Password" v-model="password" type="password"></b-input>
                 <div v-show="settingsOpen">
                     <label>Server Address</label>
-                    <b-input v-model="auth.server"></b-input>
+                    <b-input v-model="server"></b-input>
                     <label>Server Port</label>
-                    <b-input v-model="auth.port"></b-input>
+                    <b-input v-model="port"></b-input>
                     <b-form-select  :options="eauthOptions" 
-                                    v-model="auth.eauth"
+                                    v-model="eauth"
                                     placeholder="EAuthentication Type">
                     </b-form-select>
-                    <b-btn  :variant="testUI.variant" 
-                            @click="serverPing"
+                    <b-btn  :variant="ping.variant" 
+                            @click="pingTest"
                             class="mt-2 mb-2">
-                            {{ testUI.text }}
+                            {{ ping.text }}
                     </b-btn>
                 </div>
-                <b-btn @click="login">Login <i v-show="auth.waiting == true" class="fa fa-spinner"></i></b-btn>
+                <b-btn @click="authenticate">Login <i v-show="auth.waiting == true" class="fa fa-spinner"></i></b-btn>
                 </b-form-group>
             </b-col>
         </b-row>
@@ -37,51 +36,80 @@
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
     name: 'login',
     data() {
         return{
-            auth: this.$root.auth,
             settingsOpen: false,
             username: '',
             password: '',
-            testUI: {
-                'variant': 'secondary',
-                'text': 'Test'
-            },
-            eauthChoice: 0,
+            server: 'salt',
+            port: '8000',
+            eauth: "auto",
             eauthOptions: [
                 {text:'Auto', value: 'auto'},
                 {text:'Pam', value: 'pam'},
                 {text:'Ldap', value: 'ldap'},
-            ]
+            ],
+            ping: {
+                'variant': 'secondary',
+                'text': 'Test'
+            }
+        }
+    },
+    computed: {
+        auth() {
+            return this.$store.state.auth
         }
     },
     methods: {
         toggleSettings: function() {
             this.settingsOpen = !this.settingsOpen
         },
-        serverPing: function() {
-            var success = (response) => {
-                this.testUI.variant = "success",
-                this.testUI.text = "Success"
-            }
-            var failure = () => {
-                this.testUI.variant = "danger",
-                this.testUI.text = "Failed"
-            }
-            this.auth.serverPing(this.auth.server,this.auth.port,success,failure)
+        pingTest: function() {
+            this.$store.dispatch('serverPing',{'server':this.server,'port':this.port})
+            .then((response) => {
+                if(response){
+                    this.ping.variant = 'success'
+                    this.ping.text = 'Success'
+                }
+                else {
+                    this.ping.variant = 'danger'
+                    this.ping.text = 'Failed'
+                }
+            })
+            .catch((error) => {
+                console.debug(error)
+                this.ping.variant = 'danger'
+                this.ping.text = 'Failed'
+            })
+            
         },
-        login: function() {
-
-            var loginCallback = () => {
-                this.$router.push({path: '/'})
-            }
-
-            if(this.auth.username && this.password){
-                this.auth.login(this.password,loginCallback)
-            }
-        }
+        authenticate: function() {
+            return axios.post('https://' + this.server + 
+                            ':' + this.port + '/login', {
+                    username: this.username,
+                    password: this.password,
+                    eauth: this.eauth
+                })
+            .then((response) => {
+                if(response.status == 200){
+                    console.debug(response)
+                    let data = response['data']['return'][0]
+                    this.$store.commit('sessionUpdate', {
+                        username: this.username,
+                        eauth: this.eauth,
+                        token: data.token,
+                        expire: data.expire,
+                        perms: data.perms
+                    })
+                    this.$store.dispatch('serverHeartBeat')
+                    this.$router.push('minions')
+                }
+            })
+        },
     },
 }
 </script>

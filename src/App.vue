@@ -5,8 +5,5 @@
 <script>
 export default { 
   name: 'app',
-  data: {
-    sharedState: this.sharedState
-  }
 }
 </script>

@@ -3,49 +3,71 @@ import axios from 'axios'
 export const auth = {
     state: {
         connected: false,
-        str_status: 'not connected',
         authorized: false,
+        interval: null,
         token: null,
         expire: null,
         perms: null,
+        username: 'user',
         server: "salt.sfb.osaa.net",
         port: "8000",
         eauth: "auto",
     },
     mutations: {
-        authorize (state, data) {
+        sessionUpdate (state, data) {
+            console.debug('session update')
+            console.debug(data)
             state.connected = true
             state.authorized = true
+            state.username = data.username
+            state.eauth = data.eauth
             state.token = data.token
             state.expire = data.expire
             state.perms = data.perms
+        },
+        sessionClear (state) {
+            state.connected = state.authorized = state.token = state.expire = state.perms = null
         },
         serverUp (state) {
             state.connected = true
         },
         serverDown (state) {
             state.connected = false
-        }
+        },
+        storeInterval (state, int) {
+            clearInterval(state.interval)
+            state.interval = int
+        },
     },
     actions: {
-        serverPing(context) {
-            return axios.get('https://' + context.state.server + 
-                            ':' + context.state.port + '/')
+        serverHeartBeat(context) {
+            context.dispatch('serverCheck')
+            context.commit('storeInterval',setInterval(() => {
+                context.dispatch('serverCheck')
+            },5000)
+            )
+        },
+        serverCheck (context,data) {
+            context.dispatch('serverPing',{
+                'server': context.state.server,
+                'port': context.state.port
+            })
             .then((response) => {
                 if(response){
                     context.commit('serverUp')
                 }
+                else{
+                    context.commit('serverDown')
+                }
             })
-            .catch((error) => {
-                console.debug(error)
+            .catch((err) => {
+                console.debug(err)
                 context.commit('serverDown')
             })
         },
-        serverHeartBeat(context) {
-            context.dispatch('serverPing')
-            setInterval(() => {
-                context.dispatch('serverPing')
-            },5000)
-        }
+        serverPing (context, data) {
+            return axios.get('https://' + data.server + 
+                            ':' + data.port + '/')
+        },
     }
 }
