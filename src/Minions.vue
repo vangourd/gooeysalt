@@ -47,25 +47,23 @@
         
         </b-collapse>
     </b-navbar>
-        <div class="listView" v-for="minion in minions.data" :key="minion.name">
+        <div class="listView" v-for="minion in minions" :key="minion.name">
                 <b-card class="minionCard" v-if="minion.properties">
-                            <!-- Name and OS Type -->
                     <i class="fa fa-circle statusindicator" v-if="minion.status == 'up'" ></i>
-                    <i class="fa fa-bed" v-if="minion.status == 'down '"></i>
+                    <i class="fa fa-bed" v-if="minion.status === 'down '"></i>
                     <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
                     <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
                         <strong>{{ minion.properties.fqdn }}</strong>
                     <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
                 </b-card>
         </div>
-    <spinner v-if="minions.length == 0"></spinner>
+    <spinner v-if="this.minions === 0"></spinner>
 </b-container>
 </template>
 
 <script>
 import axios from 'axios'
 import Spinner from 'components/Spinner.vue'
-import { MinionsHandler } from 'src/salt/'
 
 export default {
     name: 'minionlist',
@@ -75,21 +73,63 @@ export default {
     },
     data() {
         return {
-            auth: this.$root.auth,
-            minions: new MinionsHandler(this.$root.auth),
+            auth: this.$store.state.auth,
             actionBar: {
-                'sort': 'nameSortDown'
+                'sort': 'minionsNameDown'
             },
             apilimit: Date.now(),
             slideposition: 12,
-            currentminion: "Test"
         }
     },
     computed: {
-        minionsdata: function () {
-            return this.minions.data
+        minions: function() {
+            return this.$store.state.minions.all
         }
     },
+    // computed: {
+    //     minionsNameUp: function () {
+    //         return this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.name < b.name) return 1;
+    //             if(a.name > b.name) return -1;
+    //             return 0; 
+    //         })
+    //     },
+    //     minionsNameDown: function() {
+    //         return this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.name < b.name) return -1;
+    //             if(a.name > b.name) return 1;
+    //             return 0; 
+    //         })
+    //     },
+    //     minionsResponseUp: function(minions){
+    //         return this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.properties == null) return -1;
+    //             return 1;
+    //         })
+    //     },
+    //     minionsResponseDown: function(minions){
+    //         return this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.properties == null) return 1;
+    //             return -1;
+    //         })
+    //     },
+    //     minionsOSUp: function(minions){
+    //         return  this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.properties == null || b.properties == null) return 2 
+    //             if(a.properties.kernel > b.properties.kernel) return 1
+    //             if(a.properties.kernel < b.properties.kernel) return -1
+    //             return 0;
+    //         })
+    //     },
+    //     minionsOSDown: function(minions){
+    //         return this.$store.state.minions.all.sort(function(a,b) {
+    //             if(a.properties == null || b.properties == null) return 2
+    //             if(a.properties.kernel > b.properties.kernel) return -1
+    //             if(a.properties.kernel < b.properties.kernel) return 1
+    //             return 0;
+    //         })
+    //     }
+    //},
     methods: {
         refresh() {
             this.minions.clearAndGet()

@@ -196,55 +196,7 @@ class MinionsHandler extends QueryHandler {
             console.debug(err)
             this.waitingOnResponse = false
         }
-        this.sort = {
-            nameUp: function(minions) {
-                minions.sort(function(a,b) {
-                    if(a.name < b.name) return 1;
-                    if(a.name > b.name) return -1;
-                    return 0; 
-                })
-                return minions
-            },
-            nameDown: function(minions){
-                minions.sort(function(a,b) {
-                    if(a.name < b.name) return -1;
-                    if(a.name > b.name) return 1;
-                    return 0; 
-                })
-                return minions
-            },
-            responseUp: function(minions){
-                minions.sort(function(a,b) {
-                    if(a.properties == null) return -1;
-                    return 1;
-                })
-                return minions
-            },
-            responseDown: function(minions){
-                minions.sort(function(a,b) {
-                    if(a.properties == null) return 1;
-                    return -1;
-                })
-                return minions
-            },
-            osUp: function(minions){
-                minions.sort(function(a,b) {
-                    if(a.properties == null || b.properties == null) return 2 
-                    if(a.properties.kernel > b.properties.kernel) return 1
-                    if(a.properties.kernel < b.properties.kernel) return -1
-                    return 0;
-                })
-                return minions
-            },
-            osDown: function(minions){
-                minions.sort(function(a,b) {
-                    if(a.properties == null || b.properties == null) return 2
-                    if(a.properties.kernel > b.properties.kernel) return -1
-                    if(a.properties.kernel < b.properties.kernel) return 1
-                    return 0;
-                })
-                return minions
-            }
+        this.sort = { 
         }
 
     }
