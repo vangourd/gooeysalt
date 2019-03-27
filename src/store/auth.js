@@ -83,8 +83,8 @@ export const auth = {
             let tokentime = Math.floor(local.expire)
             let now = Math.floor(Date.now()/1000)
             console.debug(local)
-            if(now > tokentime){console.debug('Token out of date'); return}
-            if(!local.authorized){console.debug('Not authorized data'); return}
+            if(now > tokentime){console.debug('Token out of date'); this.$router.push('login')}
+            if(!local.authorized){console.debug('Not authorized data'); this.$router.push('login')}
             context.commit('loadAuthFromStorage', local)
         }
     }
