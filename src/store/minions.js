@@ -115,11 +115,5 @@ export const minions = {
                     })
             })
         },
-        refreshInterval (context) {
-
-        },
-        dataRefresh (context) {
-
-        }
     }
 }
