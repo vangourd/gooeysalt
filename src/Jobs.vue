@@ -64,8 +64,8 @@
         <job-item v-if="jobs.complete.length > 0" v-for="job in jobs.complete" :job="job" :key="job.jid">
         </job-item>
         <div id="statusList">
-            <spinner v-if="jobs.complete.length == 0 && this.salt.auth.status == true"></spinner>
-            <b-alert id="authWarning" variant="warning" v-if=" this.salt.auth.status == false">
+            <spinner v-if="jobs.complete.length == 0 && this.auth.connected == true"></spinner>
+            <b-alert id="authWarning" variant="warning" v-if=" this.auth.connected == false">
                 You are not authenticated
             </b-alert>
         </div>
@@ -117,11 +117,10 @@ export default {
             timeScale: this.createTimeRange('10m')
         }
     },
-    created() {
-        if (this.salt && this.salt.auth.status === false){
-            this.$router.push({'path':'/login'})
+    computed: {
+        auth: function() {
+            return this.$store.state.auth
         }
-        this.setupInterval = setInterval(this.setupClients, 2000)
     },
     beforeDestroy() {
         this.saveHistoryToStorage()
