@@ -61,10 +61,10 @@
         <jobcreator></jobcreator>
         <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
         </job-pending>
-        <job-item v-if="jobs.complete.length > 0" v-for="job in jobs.complete" :job="job" :key="job.jid">
+        <job-item v-if="jobs.completed.length > 0" v-for="job in jobs.completed" :job="job" :key="job.jid">
         </job-item>
         <div id="statusList">
-            <spinner v-if="jobs.complete.length == 0 && this.auth.connected == true"></spinner>
+            <spinner v-if="jobs.completed.length === 0 && this.auth.connected == true"></spinner>
             <b-alert id="authWarning" variant="warning" v-if=" this.auth.connected == false">
                 You are not authenticated
             </b-alert>
@@ -92,11 +92,6 @@ export default {
     },
     data() {
         return {
-            salt: this.$root.salt,
-            jobs: {
-                'complete': [],
-                'active': [],
-            },
             actionBar: {
                 sort: "startUp",
                 time: {
@@ -112,14 +107,18 @@ export default {
                     'obj': null
                 }
             },
-            saltjobs: null,
-            setupInterval: false,
             timeScale: this.createTimeRange('10m')
         }
     },
     computed: {
         auth: function() {
             return this.$store.state.auth
+        },
+        jobs: function() {
+            return {
+                'active': this.$store.getters.jobs.active,
+                'completed': this.$store.getters.jobs.completed[this.actionBar.sort]
+            }
         }
     },
     beforeDestroy() {
@@ -176,33 +175,27 @@ export default {
 
             if(this.actionBar.sort === 'functionUp'){
                 this.actionBar.sort = 'functionDown'
-                this.jobs.complete =  this.saltjobs.sort.functionDown(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'functionUp'
-                this.jobs.complete = this.saltjobs.sort.functionUp(this.jobs.complete)
             }
         },
 
         sortByStart () {
             if(this.actionBar.sort === 'startUp'){
                 this.actionBar.sort = 'startDown'
-                this.jobs.complete = this.saltjobs.sort.startUp(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'startUp'
-                this.jobs.complete = this.saltjobs.sort.startDown(this.jobs.complete)
             }
         },
 
         sortByTarget () {
             if(this.actionBar.sort === 'targetUp'){
                 this.actionBar.sort = 'targetDown'
-                this.jobs.complete = this.saltjobs.sort.targetUp(this.jobs.complete)
             }
             else{
                 this.actionBar.sort = 'targetUp'
-                this.jobs.complete = this.saltjobs.sort.targetDown(this.jobs.complete)
             }
         },
 

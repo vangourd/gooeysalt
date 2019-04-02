@@ -15,6 +15,60 @@ export const jobs = {
             },
         }
     },
+    getters: {
+        jobs: state => {
+            let active = []
+            let completed = []
+
+            for (let key in state.active){
+                active.push({
+                    'jid':key,
+                    'properties':state.active[key],
+                })
+            }
+            for (let key in state.completed){
+                completed.push({
+                    'jid':key,
+                    'properties':state.completed[key],
+                })
+            }
+
+            let functionUp = completed.slice().sort(
+                function(a,b) {
+                    if(a.properties.Function < b.properties.Function) return 1;
+                    if(a.properties.Function > b.properties.Function) return -1;
+                    return 0; 
+                })
+
+            let startUp = completed.slice().sort(
+                function(a,b) {
+                    if(a.properties.StartTime < b.properties.StartTime) return 1;
+                    if(a.properties.StartTime > b.properties.StartTime) return -1;
+                    return 0; 
+                })
+
+            let targetUp = completed.slice().sort(
+                function(a,b) {
+                    if(a.properties.Target < b.properties.Target) return 1;
+                    if(a.properties.Target > b.properties.Target) return -1;
+                    return 0; 
+                })
+
+            return {
+                'active': active,
+                'completed': {
+                    'functionUp': functionUp,
+                    'functionDown': functionUp.slice().reverse(),
+                    'startUp': startUp,
+                    'startDown': startUp.slice().reverse(),
+                    'resultUp': [],
+                    'resultDown': [],
+                    'targetUp': targetUp,
+                    'targetDown': targetUp.slice().reverse(),
+                }
+            }
+        }
+    },  
     mutations: {
         setActiveJobs(state, jobs){
             console.debug('Committing state')

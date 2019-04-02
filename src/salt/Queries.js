@@ -52,27 +52,27 @@ class ActiveJobsHandler extends QueryHandler {
                 this.onFailure
             )
     }
-    active_jobs_array () {
-        axios.post('https://' + this.auth.server + 
-            ':' + this.auth.port + '/',{
-            client: "runner",
-            fun: "jobs.active",
-            },
-            {headers: {
-                    'x-auth-token': this.auth.getToken(),
-                    'content-type': 'application/json',
-                    'accept': 'application/json'
-                }
-            })
-        .then( (response) => {
-            this.handleServerErrorResponse(response)
-            var jobsArray = this.jobsToArray(response)
-            this.onSuccess(jobsArray)
-        })
-        .catch((err) => {
-            this.onFailure(err)
-        })
-    }
+    // active_jobs_array () {
+    //     axios.post('https://' + this.auth.server + 
+    //         ':' + this.auth.port + '/',{
+    //         client: "runner",
+    //         fun: "jobs.active",
+    //         },
+    //         {headers: {
+    //                 'x-auth-token': this.auth.getToken(),
+    //                 'content-type': 'application/json',
+    //                 'accept': 'application/json'
+    //             }
+    //         })
+    //     .then( (response) => {
+    //         this.handleServerErrorResponse(response)
+    //         var jobsArray = this.jobsToArray(response)
+    //         this.onSuccess(jobsArray)
+    //     })
+    //     .catch((err) => {
+    //         this.onFailure(err)
+    //     })
+    // }
     jobsToArray (response){
                 var query = response['data']['return'][0]
                 var jobsArray = []
