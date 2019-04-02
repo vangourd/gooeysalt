@@ -7,22 +7,25 @@ export const jobs = {
         },
         completed: {
 
+        },
+        dates: {
+            '5min': {
+                'start': new Date(Date.now() - 300000).toLocaleString(),
+                'end': new Date(Date.now()).toLocaleString()
+            },
         }
     },
     mutations: {
         setActiveJobs(state, jobs){
             console.debug('Committing state')
             state.active = {...state.active, ...jobs}
+        },
+        setCompletedJobs(state, jobs){
+            console.debug('Committing completed job merge')
+            state.completed = {...state.completed, ...jobs}
         }
     },
     actions: {
-        loadJobs(context){
-            context.dispatch('getActiveJobs')
-            .then((response) => {
-                let jobs = response['data']['return'][0]
-                context.commit('setActiveJobs', jobs)
-            })
-        },
         getActiveJobs(context){
             let auth = context.rootState.auth
             return axios.post('https://' + auth.server + 
@@ -35,10 +38,30 @@ export const jobs = {
                     'content-type': 'application/json',
                     'accept': 'application/json'
                 }
+            }).then((response) => {
+                context.commit('setActiveJobs', response['data']['return'][0])
             })
         },
-        getCompletedJobsByDate(context, daterange){
-            
+        getCompletedJobsByDate(context, datetime){
+            let auth = context.rootState.auth
+            return axios.post('https://' + auth.server + 
+                    ':' + auth.port + '/',{
+                    client: "runner",
+                    fun: "jobs.list_jobs",
+                    start_time: datetime.start,
+                    end_time: datetime.end,
+                    },
+                    {headers: {
+                            'x-auth-token': auth.token,
+                            'content-type': 'application/json',
+                            'accept': 'application/json'
+                        }
+            }).then((response) => {
+                context.commit('setCompletedJobs',response['data']['return'][0])
+            })
+        },
+        getJobsIn5Minutes(context) {
+            context.dispatch('getCompletedJobsByDate', context.state.dates['5min'])
         }
     }
 }
