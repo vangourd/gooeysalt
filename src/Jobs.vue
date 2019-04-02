@@ -46,8 +46,7 @@
             <b-navbar-nav class="ml-auto">
                     <b-nav-form class="searchcontainer">
                         <b-form-input
-                            @keydown.prevent @change="searchJobs"
-                            v-model="actionBar.search.raw" 
+                            v-model="actionBar.search" 
                             type="text" 
                             placeholder="Search jobs">
                         </b-form-input>
@@ -59,10 +58,17 @@
             
         </b-navbar>
         <jobcreator></jobcreator>
-        <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
-        </job-pending>
-        <job-item v-if="jobs.completed.length > 0" v-for="job in jobs.completed" :job="job" :key="job.jid">
-        </job-item>
+        <div v-if="actionBar.search.length > 0">
+            Showing {{ searchresults.length }} results for {{ actionBar.search }}
+            <job-item v-for="job in searchresults" :key="job.jid" :job="job">
+            </job-item>
+        </div>
+        <div v-if="searchresults.length == 0">
+            <job-pending v-if="jobs.active.length > 0" v-for="job in jobs.active" :job="job" :key="job.jid">
+            </job-pending>
+            <job-item v-if="jobs.completed.length > 0" v-for="job in jobs.completed" :job="job" :key="job.jid">
+            </job-item>
+        </div>
         <div id="statusList">
             <spinner v-if="jobs.completed.length === 0 && this.auth.connected == true"></spinner>
             <b-alert id="authWarning" variant="warning" v-if=" this.auth.connected == false">
@@ -102,10 +108,7 @@ export default {
                     'choices':['10m','1hr','8hr','24hr','72hr','Custom'],
                     'choice': 0
                 },
-                search: {
-                    'raw': "",
-                    'obj': null
-                }
+                search: ""
             },
             timeScale: this.createTimeRange('10m')
         }
@@ -115,9 +118,38 @@ export default {
             return this.$store.state.auth
         },
         jobs: function() {
+            let completed = this.$store.getters.jobs.completed[this.actionBar.sort]
+            let active = this.$store.getters.jobs.active
+            if(this.searchresults.length > 0){
+                let completed = this.searchresults
+            }
+
             return {
-                'active': this.$store.getters.jobs.active,
-                'completed': this.$store.getters.jobs.completed[this.actionBar.sort]
+                'active': active,
+                'completed': completed
+            }
+        },
+        searchresults: function() {
+            if(this.actionBar.search.length === 0){return []}
+            let queries = this.parseSearchQuery()
+            console.debug(queries)
+            let jobs = this.$store.getters.jobs.completed.startUp
+            console.debug(jobs)
+            var filtered = []
+
+            for(let query in queries){
+                if(!queries[query]){continue}
+                for(let jid in jobs){
+                    if(jobs[jid].properties[queries[query].propname].includes(queries[query].value)){
+                        filtered.push(jobs[jid])
+                    }
+                }
+            }
+            if(filtered.length > 0){
+                return filtered
+            }
+            else {
+                return []
             }
         }
     },
@@ -140,8 +172,8 @@ export default {
         },
 
         refresh(){
-            this.saltjobs.jobs.active.get()
-            this.saltjobs.jobs.complete.getByDate()
+            this.$store.dispatch('getActiveJobs')
+            this.$store.dispatch('getJobsIn5Minutes')
         },
 
         connectedToApi(){
@@ -258,14 +290,16 @@ export default {
             }
         },
 
-        searchJobs: function() {
+        searchJobs: function(terms) {
             this.actionBar.search.obj = this.parseSearchQuery(this.actionBar.search.raw)
             this.saltjobs.jobs.complete.search(this.actionBar.search.obj)
             this.sortByStart()
         },
 
         // TODO: Need to handle situation when no match is found
-        parseSearchQuery: function(query) {
+        parseSearchQuery: function() {
+            let query = this.actionBar.search
+            console.debug('parseSearchQuery run')
             // function
             var matches = []
             var result = {}
