@@ -49,21 +49,21 @@
     </b-navbar>
         <div class="listView" v-for="minion in this.minions" :key="minion.name">
                 <b-card class="minionCard">
-                    <div v-if="minion.status == 'down'">
+                    <div v-if="minion.status === 'down'">
                         <i class="fa fa-bed"></i>
                         <strong> {{ minion.name }} </strong>
                     </div>
-                    <div v-if="minion.status == 'up'">
-                        <div v-if="!minion.properties">
-                            <spinner></spinner>
+                    <div v-if="minion.status === 'up'">
+                        <div v-if="minion.properties === null">
+                            <i class="fa fa-spinner fa-pulse"></i>
                             <strong> {{ minion.name }} </strong>
                         </div>
-                        <div v-if="minion.properties">
-                        <i class="fa fa-circle statusindicator"></i>
-                        <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
-                        <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
+                        <div v-if="minion.properties !== null">
+                            <i class="fa fa-circle statusindicator"></i>
+                            <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
+                            <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
                             <strong>{{ minion.properties.fqdn }}</strong>
-                        <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
+                            <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
                         </div>
                     </div>
                 </b-card>
@@ -92,7 +92,6 @@ export default {
         }
     },
     created() {
-        this.$store.dispatch('getMinionStatus')
     },
     computed: {
         auth: function() {

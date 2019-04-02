@@ -2,22 +2,30 @@ import axios from 'axios'
 
 export const minions = {
     state: {
-        all: [],
+        all: {},
         unknown: [],
         waiting: false
     },
     getters: {
         minions: state => {
-            let nameUp = state.all.slice().sort(function(a,b) {
+            let arr = []
+            for (let key in state.all){
+                arr.push({
+                    'name':key,
+                    'properties':state.all[key].properties,
+                    'status': state.all[key].status
+                })
+            }
+            let nameUp = arr.slice().sort(function(a,b) {
                     if(a.name < b.name) return 1;
                     if(a.name > b.name) return -1;
                     return 0; 
                 })
-            let responseUp =  state.all.slice().sort(function(a,b) {
+            let responseUp =  arr.slice().sort(function(a,b) {
                     if(a.status == 'down') return -1;
                     return 1;
                 })
-            let OSUp = state.all.slice().sort(function(a,b) {
+            let OSUp = arr.slice().sort(function(a,b) {
                     if(a.properties == null || b.properties == null) return 2 
                     if(a.properties.kernel > b.properties.kernel) return 1
                     if(a.properties.kernel < b.properties.kernel) return -1
@@ -34,63 +42,66 @@ export const minions = {
         },
     },
     mutations: {
-        updateMinionStatus (state, minions) {
-            var unknown = []
-            for (let i in minions.up){
-                if(!state.all.includes(minions.up[i])){
-                    unknown.push(minions.up[i])
+        setMinionStatus(state, statuslist){
+            console.debug('Setting statuses....')
+            for (let i in statuslist.up){
+                let name = statuslist.up[i]
+                if(state.all.hasOwnProperty(name)){
+                    state.all[name].status = 'up'
                 }
-                state.all.push({
-                    'name': minions.up[i],
-                    'status': 'up',
-                    'properties': null
-                })
+                else {
+                    state.all[name] = {'status': 'up','properties': null}
+                }
             }
-            for (let i in minions.down){
-                state.all.push({
-                    'name': minions.down[i],
-                    'status': 'down',
-                    'properties': null
-                })
+            for (let i in statuslist.down){
+                let name = statuslist.down[i]
+                if(state.all.hasOwnProperty(name)){
+                    state.all[name].status = 'down'
+                }
+                else {
+                    state.all[name] = {'status': 'down', 'properties': null}
+                }
             }
-            state.unknown = unknown
         },
-        updateMinionsGrains (state, data){
-            for (let i in state.all){
-                if(data[state.all[i].name]){
-                    state.all[i].properties = data[state.all[i].name]
-                }
+        setMinionGrains(state, grains){
+            if(state.all.hasOwnProperty(grains.name) 
+            && state.all[grains.name].hasOwnProperty('properties')){    
+                console.debug('Setting grains for' + grains.name)
+                state.all[grains.name].properties = grains.properties
             }
-            // TODO: given minion name, update state
-            state.unknown.length = 0
+            else {
+                state.all[grains.name] = {'properties': null}
+                console.debug('Creating... ' + grains.name)
+            }
         },
         waitingOnApi (state) {
             state.waiting = true
         },
         doneWaitingOnApi (state) {
             state.waiting = false
-        }
+        },
     },
     actions: {
         handleServerErrorResponse (context, response) {
-            if(typeof(response['data']['return'][0]) == 'undefined'){
-                    throw {name:"EmptyResponse",message:response}
-            }
-            if(response['data']['return'].includes("Exception occurred")){
-                throw {name:"ServerError",message:response['data']['return'][0]}
-            }
-            if(typeof(response['data']['return'][0]) == 'object'){
-                if(Object.keys(response['data']['return'][0]).length == 0){
-                    throw {name:"EmptyResponse", message:response}
+
+                if(typeof(response['data']['return'][0]) == 'undefined'){
+                    throw({name:"EmptyResponse",message:response})
                 }
-                else{
-                    return response
+
+                if(response['data']['return'].includes("Exception occurred")){
+                    throw {name:"ServerError",message:response['data']['return'][0]}
+                }  
+
+                if(typeof(response['data']['return'][0]) == 'object'){
+                    if(Object.keys(response['data']['return'][0]).length == 0){
+                        throw {name:"EmptyResponse", message:response}
+                    }
+                    else{
+                        return (response['data']['return'][0])
+                    }
                 }
-            }
-            
         },
         getMinionStatus (context) {
-            const unknown = context.state.unknown
             let auth = context.rootState.auth
             context.commit("waitingOnApi")
             return axios.post('https://' + auth.server + 
@@ -105,40 +116,70 @@ export const minions = {
                         }
                     })
                    .then((response) => {
-                        context.dispatch('handleServerErrorResponse',response)
-                        .then((response) => {
-                        let data = response['data']['return'][0]
-                        context.commit('updateMinionStatus', data)
                         context.commit('doneWaitingOnApi')
-                        context.dispatch('getUnknownGrains')
-                        })
+                        return context.dispatch('handleServerErrorResponse',response)
                     })
                 .catch((err) => {
-                    this.onFailure(err)
+                    console.debug(err)
                 })
         },
-        getUnknownGrains (context) {
-            let auth = context.rootState.auth
-            let unknown = context.state.unknown
-            return axios.post('https://' + auth.server + 
-                ':' + auth.port + '/',{
-                client: "local",
-                tgt: unknown.join(','),
-                tgt_type: "list",
-                fun: "grains.items"
-                },
-                {headers: {
-                        'x-auth-token': auth.token,
-                        'content-type': 'application/json',
-                        'accept': 'application/json'
-                    }
-                })
-                .then((response) => {
-                    context.dispatch('handleServerErrorResponse',response)
-                    .then((response) => {
-                        context.commit('updateMinionsGrains', response['data']['return'][0])
+        handleMissingMinionGrains (context){
+            for (let i in context.state.all){
+                let minion = context.state.all[i]
+                if (minion.properties == null || undefined){
+                    context.dispatch('getMinionGrains',i)
+                    .then((grains) => {
+                        context.commit('setMinionGrains', grains)
                     })
+                }
+                
+            }
+        },
+        getMinionGrains (context, minion) {
+            let auth = context.rootState.auth
+            return axios.post('https://' + auth.server + 
+                    ':' + auth.port + '/',{
+                    client: "local",
+                    tgt: minion,
+                    fun: "grains.items"
+                    },
+                    {headers: {
+                            'x-auth-token': auth.token,
+                            'content-type': 'application/json',
+                            'accept': 'application/json'
+                        }
+            }).then((response) => {
+                let name = Object.keys(response['data']['return'][0])[0]
+                let properties = Object.values(response['data']['return'][0])[0]
+                return {'name':name,'properties': properties}
             })
         },
+        queueUnknownGrains (context) {
+            return new Promise((resolve) => {
+                let unknown = context.state.unknown
+                for (let i in unknown){
+                    context.dispatch('getMinionGrain',unknown[i])
+                    .then((response) => {
+                        context.dispatch('handleServerErrorResponse',response)
+                        .then((response) => {
+                            
+                            context.commit('updateMinionGrains', {
+                                'name': name,
+                                'properties': data
+                            })
+                        })
+                    }).then(() => {
+                        context.commit('clearUnknown')
+                        resolve()
+                    })
+                }
+            })
+            
+        },
+        loadMinions(context) {
+            context.dispatch('getMinionStatus')
+            .then((statuslist) => { context.commit('setMinionStatus',statuslist)})
+            .then(() => { context.dispatch('handleMissingMinionGrains') })
+        }
     }
 }
