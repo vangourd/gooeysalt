@@ -28,6 +28,7 @@ export const auth = {
         },
         sessionClear (state) {
             state.connected = state.authorized = state.token = state.expire = state.perms = null
+            localStorage.clear()
         },
         serverUp (state) {
             state.connected = true
@@ -86,6 +87,10 @@ export const auth = {
             if(now > tokentime){console.debug('Token out of date'); this.$router.push('login')}
             if(!local.authorized){console.debug('Not authorized data'); this.$router.push('login')}
             context.commit('loadAuthFromStorage', local)
+        },
+        logout (context){
+            context.commit('sessionClear')
+            this.$router.push('login')
         }
     }
 }

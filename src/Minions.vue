@@ -38,11 +38,11 @@
                             placeholder="Search">
                         </b-form-input>
                     </b-nav-form>
-            <router-link tag="b-nav-item" to="/logout">
+            <a tag="b-nav-item" @click="logout">
                 <b-nav-item>
                     Logout {{ auth.username }} <i class="fa fa-user"></i>
                 </b-nav-item>
-            </router-link>
+            </a>
         </b-navbar-nav>
         
         </b-collapse>
@@ -140,6 +140,9 @@ export default {
             if (this.slideposition == 12){
                 this.slideposition = 5
             }
+        },
+        logout(){
+            this.$store.dispatch('logout')
         }
     },
 }
