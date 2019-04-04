@@ -2,33 +2,29 @@ import axios from 'axios'
 
 export const minions = {
     state: {
-        all: {},
-        unknown: [],
+        status: {},
+        properties: {},
         waiting: false
     },
     getters: {
         minions: state => {
             let arr = []
-            for (let key in state.all){
-                arr.push({
-                    'name':key,
-                    'properties':state.all[key].properties,
-                    'status': state.all[key].status
-                })
+            for (let key in state.status){
+                arr.push(key)
             }
             let nameUp = arr.slice().sort(function(a,b) {
-                    if(a.name < b.name) return 1;
-                    if(a.name > b.name) return -1;
+                    if(a < b) return 1;
+                    if(a > b) return -1;
                     return 0; 
                 })
             let responseUp =  arr.slice().sort(function(a,b) {
-                    if(a.status == 'down') return -1;
+                    if(state.status[a] == 'down') return -1;
                     return 1;
                 })
             let OSUp = arr.slice().sort(function(a,b) {
-                    if(a.properties == null || b.properties == null) return 2 
-                    if(a.properties.kernel > b.properties.kernel) return 1
-                    if(a.properties.kernel < b.properties.kernel) return -1
+                    if(state.properties[a] == null || state.properties[b] == null) return 2 
+                    if(state.properties[a].kernel > state.properties[b].kernel) return 1
+                    if(state.properties[a].kernel < state.properties[b].kernel) return -1
                     return 0;
                 })
             return {
@@ -46,31 +42,20 @@ export const minions = {
             console.debug('Setting statuses....')
             for (let i in statuslist.up){
                 let name = statuslist.up[i]
-                if(state.all.hasOwnProperty(name)){
-                    state.all[name].status = 'up'
-                }
-                else {
-                    state.all[name] = {'status': 'up','properties': null}
-                }
+                this._vm.$set(state.status,name,'up')
             }
             for (let i in statuslist.down){
                 let name = statuslist.down[i]
-                if(state.all.hasOwnProperty(name)){
-                    state.all[name].status = 'down'
-                }
-                else {
-                    state.all[name] = {'status': 'down', 'properties': null}
-                }
+                this._vm.$set(state.status,name,'down')
             }
         },
         setMinionGrains(state, grains){
-            if(state.all.hasOwnProperty(grains.name) 
-            && state.all[grains.name].hasOwnProperty('properties')){    
-                console.debug('Setting grains for' + grains.name)
-                state.all[grains.name].properties = grains.properties
+            if(state.properties.hasOwnProperty(grains.name)){    
+                console.debug('Setting grains for ' + grains.name)
+                this._vm.$set(state.properties,grains.name,grains.properties)
             }
             else {
-                state.all[grains.name] = {'properties': null}
+                this._vm.$set(state.properties,grains.name,grains.properties)
                 console.debug('Creating... ' + grains.name)
             }
         },
@@ -124,10 +109,10 @@ export const minions = {
                 })
         },
         handleMissingMinionGrains (context){
-            for (let i in context.state.all){
-                let minion = context.state.all[i]
-                if (minion.properties == null || undefined){
-                    context.dispatch('getMinionGrains',i)
+            for (let minionname in context.state.status){
+                let minion = context.state.properties[minionname]
+                if (minion == null || undefined){
+                    context.dispatch('getMinionGrains',minionname)
                     .then((grains) => {
                         context.commit('setMinionGrains', grains)
                     })

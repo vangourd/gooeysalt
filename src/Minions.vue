@@ -47,23 +47,23 @@
         
         </b-collapse>
     </b-navbar>
-        <div class="listView" v-for="minion in this.minions" :key="minion.name">
+        <div class="listView" v-for="minion in this.minions" :key="minion">
                 <b-card class="minionCard">
-                    <div v-if="minion.status === 'down'">
+                    <div v-if="status[minion] === 'down'">
                         <i class="fa fa-bed"></i>
-                        <strong> {{ minion.name }} </strong>
+                        <strong> {{ minion }} </strong>
                     </div>
-                    <div v-if="minion.status === 'up'">
+                    <div v-if="status[minion] === 'up'">
                         <div v-if="minion.properties === null">
                             <i class="fa fa-spinner fa-pulse"></i>
                             <strong> {{ minion.name }} </strong>
                         </div>
                         <div v-if="minion.properties !== null">
                             <i class="fa fa-circle statusindicator"></i>
-                            <i class="fab" :class="{ 'fa-windows large' : (minion.properties.kernel == 'Windows') }"></i>
-                            <i class="fab" :class="{ 'fa-linux large' : (minion.properties.kernel == 'Linux') }"></i>
-                            <strong>{{ minion.properties.fqdn }}</strong>
-                            <b-badge v-for="(role, index) in minion.properties.roles" :key="index">{{ role }}</b-badge>
+                            <i class="fab" :class="{ 'fa-windows large' : (properties[minion].kernel == 'Windows') }"></i>
+                            <i class="fab" :class="{ 'fa-linux large' : (properties[minion].kernel == 'Linux') }"></i>
+                            <strong>{{ properties[minion].fqdn }}</strong>
+                            <b-badge v-for="(role, index) in properties[minion].roles" :key="index">{{ role }}</b-badge>
                         </div>
                     </div>
                 </b-card>
@@ -100,6 +100,12 @@ export default {
         minions: function() {
             return this.$store.getters.minions[this.actionBar.sort]
         },
+        properties: function() {
+            return this.$store.state.minions.properties
+        },
+        status: function() {
+            return this.$store.state.minions.status
+        }
     },
     methods: {
         refresh() {
