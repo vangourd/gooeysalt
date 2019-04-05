@@ -54,11 +54,11 @@
                         <strong> {{ minion }} </strong>
                     </div>
                     <div v-if="status[minion] === 'up'">
-                        <div v-if="minion.properties === null">
+                        <div v-if="properties[minion] === null">
                             <i class="fa fa-spinner fa-pulse"></i>
-                            <strong> {{ minion.name }} </strong>
+                            <strong> {{ minion }} </strong>
                         </div>
-                        <div v-if="minion.properties !== null">
+                        <div v-if="properties[minion] !== null">
                             <i class="fa fa-circle statusindicator"></i>
                             <i class="fab" :class="{ 'fa-windows large' : (properties[minion].kernel == 'Windows') }"></i>
                             <i class="fab" :class="{ 'fa-linux large' : (properties[minion].kernel == 'Linux') }"></i>
