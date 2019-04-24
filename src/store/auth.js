@@ -81,6 +81,7 @@ export const auth = {
         },
         checkAuthfromStorage(context) {
             let local = JSON.parse(localStorage.getItem('auth'))
+            if(!local){return false}
             let tokentime = Math.floor(local.expire)
             let now = Math.floor(Date.now()/1000)
             console.debug(local)
