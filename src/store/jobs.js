@@ -67,6 +67,13 @@ export const jobs = {
                     'targetDown': targetUp.slice().reverse(),
                 }
             }
+        },
+        jobs_length: state => {
+            let count = 0
+            for (let key in (state.active + state.completed) ){
+                count += 1
+            }
+            return count
         }
     },  
     mutations: {
