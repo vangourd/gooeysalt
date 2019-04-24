@@ -36,6 +36,13 @@ export const minions = {
                 'OSDown': OSUp.slice().reverse()
             }
         },
+        minions_length: state => {
+            let count = 0
+            for (let key in state.status){
+                count += 1
+            }
+            return count
+        }
     },
     mutations: {
         setMinionStatus(state, statuslist){

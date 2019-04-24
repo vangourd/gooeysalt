@@ -3,7 +3,6 @@ import VueRouter from 'vue-router'
 import Vuex from 'vuex'
 import App from './App.vue'
 import BootstrapVue from 'bootstrap-vue'
-import { Auth } from 'src/salt/'
 import Minions from './Minions.vue'
 import Jobs from './Jobs.vue'
 import States from './States.vue'
@@ -21,7 +20,7 @@ const store = new Vuex.Store({
     jobs: jobs,
     minions: minions,
     statefiles: statefiles,
-  }
+  },
 })
 
 const routes = [{
@@ -74,27 +73,11 @@ new Vue({
   router,
   store,
   render: h => h(App),
-  data: {
-    auth: new Auth(),
-  },
-  methods: {
-    loadFromStorage: function(){
-      console.debug('loadFromStorage ')
-      let fromStorage = JSON.parse(localStorage.getItem('auth'))
-      if(fromStorage){
-        this.auth.import(fromStorage)
-        return true
-      }
-      return false
-    }
-  },
   created() {
-    if (!this.auth.status){
-      if(this.loadFromStorage){
+    if (!this.$store.state.auth.status){
         this.$router.push({'path':'/minions'})
-      }
     }
     this.$router.push({'path':'/login'})
-  }
+  },
 })
 
