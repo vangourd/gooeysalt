@@ -18,13 +18,13 @@
                                     v-model="eauth"
                                     placeholder="EAuthentication Type">
                     </b-form-select>
-                    <b-btn  :variant="ping.variant" 
+                    <b-btn ref="ping" :variant="ping.variant" 
                             @click="pingTest"
                             class="mt-2 mb-2">
                             {{ ping.text }}
                     </b-btn>
                 </div>
-                <b-btn @click="authenticate">Login <i v-show="auth.waiting == true" class="fa fa-spinner"></i></b-btn>
+                <b-btn id="loginbtn" @click="authenticate">Login <i v-show="auth.waiting == true" class="fa fa-spinner"></i></b-btn>
                 </b-form-group>
             </b-col>
         </b-row>

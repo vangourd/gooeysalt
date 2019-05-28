@@ -80,11 +80,11 @@
 
 <script>
 import axios from 'axios'
-import JobItem from 'components/Jobs/JobItem.vue'
-import JobPending from 'components/Jobs/JobPending.vue'
-import Spinner from 'components/Spinner.vue'
-import JobCreator from 'components/Jobs/JobCreator.vue'
-import { JobsHandler } from 'src/salt/'
+import JobItem from '@/components/Jobs/JobItem.vue'
+import JobPending from '@/components/Jobs/JobPending.vue'
+import Spinner from '@/components/Spinner.vue'
+import JobCreator from '@/components/Jobs/JobCreator.vue'
+import { JobsHandler } from '@/main.js'
 
 
 export default {

@@ -8,7 +8,7 @@ import Jobs from './Jobs.vue'
 import States from './States.vue'
 import Login from './Login.vue'
 import Logout from './Logout.vue'
-import { auth, jobs, minions, statefiles } from 'src/store'
+import { auth, jobs, minions, statefiles } from './store'
 
 Vue.use(VueRouter)
 Vue.use(Vuex)
