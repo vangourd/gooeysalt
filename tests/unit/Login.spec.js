@@ -2,9 +2,7 @@ import Vuex from 'vuex'
 import BootstrapVue from 'bootstrap-vue'
 import { shallowMount, mount, createLocalVue } from '@vue/test-utils'
 import flushPromises from 'flush-promises'
-import { auth } from '../../src/store/auth.js'
 import Login from '../../src/Login.vue'
-import { doesNotReject } from 'assert';
 import axios from 'axios'
 
 const localVue = createLocalVue()
