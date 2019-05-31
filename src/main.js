@@ -81,3 +81,4 @@ new Vue({
   },
 })
 
+export { router };
