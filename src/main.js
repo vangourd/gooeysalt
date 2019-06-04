@@ -9,10 +9,13 @@ import States from './States.vue'
 import Login from './Login.vue'
 import Logout from './Logout.vue'
 import { auth, jobs, minions, statefiles } from './store'
+import AUTH_CONFIG from './config.json'
 
 Vue.use(VueRouter)
 Vue.use(Vuex)
 Vue.use(BootstrapVue)
+
+window.AUTH_CONFIG = AUTH_CONFIG
 
 const store = new Vuex.Store({
   modules: {
