@@ -263,4 +263,49 @@ describe('Login.vue', () => {
       perms: mockAuthInfo.data.return[0].perms
     })
   })
+  it('loads customized default login details from config.json when present', () => {
+    let localAuth = {...ex_auth}
+    window.AUTH_CONFIG = (() => {
+      return {
+        server: 'server',
+        port: 'port',
+        eauth: 'eauth'
+      }
+    })()
+    let wrapper = mount(Login, {
+      localVue,
+      mocks: {
+        $store: {
+          state: {
+            auth: localAuth
+          }
+      }
+    }
+    })
+    expect(wrapper.vm.server).toEqual('server')
+    expect(wrapper.vm.port).toEqual('port')
+    expect(wrapper.vm.eauth).toEqual('eauth')
+    //expect fields to be populated
+  })
+  it('if config.json not available default connection settings chosen', () => {
+    let localAuth = {...ex_auth}
+    
+    window.AUTH_CONFIG = undefined
+
+    let wrapper = mount(Login, {
+      localVue,
+      mocks: {
+        $store: {
+          state: {
+            auth: localAuth
+          }
+      }
+    }
+    })
+
+    expect(wrapper.vm.server).toEqual('salt')
+    expect(wrapper.vm.port).toEqual('8000')
+    expect(wrapper.vm.eauth).toEqual('auto')
+    //expect fields to be populated
+  })
 

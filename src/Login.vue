@@ -11,11 +11,12 @@
                 <b-input placeholder="Password" v-model="password" type="password"></b-input>
                 <div v-show="settingsOpen">
                     <label>Server Address</label>
-                    <b-input v-model="server"></b-input>
+                    <b-input id="server_field" v-model="server"></b-input>
                     <label>Server Port</label>
-                    <b-input v-model="port"></b-input>
+                    <b-input id="port_field" v-model="port"></b-input>
                     <b-form-select  :options="eauthOptions" 
                                     v-model="eauth"
+                                    id="eauth_field"
                                     placeholder="EAuthentication Type">
                     </b-form-select>
                     <b-btn ref="ping" :variant="ping.variant" 
@@ -44,6 +45,11 @@ export default {
         if(this.auth.authorized){
             this.$router.push('minions')
         }
+        if(window.AUTH_CONFIG){
+            this.server = AUTH_CONFIG.server
+            this.port = AUTH_CONFIG.port
+            this.eauth = AUTH_CONFIG.eauth
+        }
     },
     data() {
         return{
@@ -52,7 +58,7 @@ export default {
             password: '',
             server: 'salt',
             port: '8000',
-            eauth: "auto",
+            eauth: 'auto',
             eauthOptions: [
                 {text:'Auto', value: 'auto'},
                 {text:'Pam', value: 'pam'},
@@ -67,7 +73,7 @@ export default {
     computed: {
         auth() {
             return this.$store.state.auth
-        }
+        },
     },
     methods: {
         toggleSettings: function() {
