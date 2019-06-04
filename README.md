@@ -34,3 +34,12 @@ npm run test:unit
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+
+## Sample Config.json
+
+{
+    "server": "salt.contoso.com",
+    "port": "8000",
+    "eauth": "auto"
+}
