@@ -42,6 +42,11 @@ export const auth = {
         },
         commitAuthToStorage (state) {
             localStorage.setItem('auth', JSON.stringify(state))
+        },
+        applyConfig(state,settings){
+            state.server = settings.server
+            state.port = settings.port
+            state.eauth = settings.eauth
         }
     },
     actions: {

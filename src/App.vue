@@ -6,15 +6,17 @@
 export default { 
   name: 'app',
   created() {
-    this.$store.dispatch('loadAuthFromStorage')
-  },
-  updated() {
-    if(this.auth.authorized){
-      if(this.$store.getters.minions_length === 0){ this.$store.dispatch('loadMinions') }
-      if(this.$store.getters.jobs_length === 0){
+    if(!this.auth.authorized){
+      if(this.$store.dispatch('loadAuthFromStorage')){
+        this.$store.dispatch('loadMinions')
         this.$store.dispatch('getJobsIn5Minutes')
         this.$store.dispatch('getActiveJobs')
       }
+    }
+  },
+  updated() {
+    if(this.auth.authorized){
+      
     }
   },
   computed: {

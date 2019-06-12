@@ -14,8 +14,6 @@ Vue.use(VueRouter)
 Vue.use(Vuex)
 Vue.use(BootstrapVue)
 
-window.AUTH_CONFIG = AUTH_CONFIG
-
 const store = new Vuex.Store({
   modules: {
     auth: auth,
@@ -63,19 +61,14 @@ router.beforeEach((to, from ,next) => {
 
 })
 
-window.onbeforeunload = function() {
-  if(auth.state.authorized === true){
-    localStorage.setItem('auth',JSON.stringify(auth.export()))
-  }
+if(AUTH_CONFIG){
+  auth.mutations.applyConfig(auth.state,{
+    server: AUTH_CONFIG.server,
+    port: AUTH_CONFIG.port,
+    eauth: AUTH_CONFIG.eauth 
+  })
 }
-
-/*var store = {
-  debug: 'debug',
-  state: {
-    current_view: 'jobs'
-  },
-}*/
-
+          
 new Vue({
   el: '#app',
   router,

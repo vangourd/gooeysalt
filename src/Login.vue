@@ -41,21 +41,14 @@ import axios from 'axios'
 
 export default {
     name: 'login',
-    created(){
-        if(window.AUTH_CONFIG){
-            this.server = AUTH_CONFIG.server
-            this.port = AUTH_CONFIG.port
-            this.eauth = AUTH_CONFIG.eauth
-        }
-    },
     data() {
         return{
             settingsOpen: false,
             username: '',
             password: '',
-            server: 'salt',
-            port: '8000',
-            eauth: 'auto',
+            server: this.$store.state.auth.server,
+            port: this.$store.state.auth.port,
+            eauth: this.$store.state.auth.eauth,
             eauthOptions: [
                 {text:'Auto', value: 'auto'},
                 {text:'Pam', value: 'pam'},
