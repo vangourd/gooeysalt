@@ -3,6 +3,7 @@ import BootstrapVue from 'bootstrap-vue'
 import { shallowMount, mount, createLocalVue } from '@vue/test-utils'
 import flushPromises from 'flush-promises'
 import Login from '../../src/Login.vue'
+import stubs from './stubs.json'
 import axios from 'axios'
 
 const localVue = createLocalVue()
@@ -25,19 +26,6 @@ const mockAuthInfo = {
 jest.mock("axios", () => ({
     post: jest.fn((_url, _body) => Promise.resolve( mockAuthInfo )),
 }));
-
-const stubs = {
-  'b-container': true,
-  'b-btn': true,
-  'b-navbar':true,
-  'b-row': true,
-  'b-navbar-toggle': true,
-  'b-navbar-brand': true,
-  'b-col': true,
-  'b-form-group': true,
-  'b-input': true,
-  'b-form-select': true
-}
 
 const ex_auth = {
   connected: false,
@@ -75,59 +63,6 @@ describe('Login.vue', () => {
     let el = wrapper.findAll('b-btn-stub').at(1)
     expect(el.text()).toBe("Login")
   })
-
-  it('redirects if you are authenticated', async () => {
-
-    let good_auth = {...ex_auth}
-    good_auth.authorized = true
-
-    let store = new Vuex.Store({
-      state: {
-        auth: good_auth
-      }
-    })
-
-    const wrapper = shallowMount(Login, {
-      store,
-      localVue,
-      stubs,
-      mocks: {
-        $router: {
-          push: jest.fn()
-        }
-      },
-    })
-
-    await flushPromises()
-    expect(wrapper.vm.$router.push).toBeCalledWith('minions')
-  })
-
-  it('it does not redirect if you are unauthenticated', async () => {
-
-    let bad_auth = {...ex_auth}
-    bad_auth.authorized = false
-
-    let store = new Vuex.Store({
-      state: {
-        auth: bad_auth
-      }
-    })
-
-    const wrapper = shallowMount(Login, {
-      store,
-      localVue,
-      stubs,
-      mocks: {
-        $router: {
-          push: jest.fn()
-        }
-      },
-    })
-
-    await flushPromises()
-    expect(wrapper.vm.$router.push).not.toBeCalledWith('minions')
-  })
-
   it('turns test button to "Fail" text and color to red if api request failure', async () => {
     const localAuth = {...ex_auth}
     localAuth.authorized = false
@@ -155,7 +90,6 @@ describe('Login.vue', () => {
     await flushPromises()
     expect(wrapper.vm.ping.variant).toBe("danger")
     expect(wrapper.vm.ping.text).toBe("Failed")
-  })
   })
   it('turns test button text to "Success" and color to green if api request succeeded', async () => {
     const localAuth = {...ex_auth}
@@ -223,7 +157,6 @@ describe('Login.vue', () => {
       eauth: mockParams.eauth
     })
   })
-
   it('commits the results from login to state', async () => {
     const localAuth = {...ex_auth}
     localAuth.authorized = false
@@ -310,3 +243,4 @@ describe('Login.vue', () => {
     //expect fields to be populated
   })
 
+})

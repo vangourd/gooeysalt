@@ -113,6 +113,7 @@ export default {
                         expire: data.expire,
                         perms: data.perms
                     })
+                    this.$store.commit('commitAuthToStorage')
                     this.$store.dispatch('serverHeartBeat')
                     this.$router.push('minions')
                 }

@@ -1,5 +1,6 @@
 import { auth } from '../../src/store/auth.js'
 import { router } from '../../src/main.js'
+import config from '../../src/config.json'
 
 jest.mock('../../src/main.js', () => ({
     _esModule: true,
@@ -27,6 +28,27 @@ describe('Auth.js', () => {
         expect(context.commit).toHaveBeenCalledWith('sessionClear')
     })
     it('commits authentication information when sessionUpdate function is called', () => {
+        let example_auth = {
+            token: null,
+            expire: null,
+            perms: null,
+            username: 'user',
+            eauth: "auto",
+        }
+        let state = {
+            server: config.server,
+            port: config.port,
+            connected: false,
+            authorized: false,
+            interval: null,
+        }
+        auth.mutations.sessionUpdate(state, example_auth)
+        let expected_state = {...state, ...example_auth}
+        expected_state.authorized = true
+        expected_state.connected = true
+        expect(state).toEqual(expected_state)
+    })
+    it('commits auth to storage', () => {
         let ex_auth = {
             connected: false,
             waiting: false,
@@ -36,13 +58,12 @@ describe('Auth.js', () => {
             expire: null,
             perms: null,
             username: 'user',
-            server: "salt.sfb.osaa.net",
-            port: "8000",
+            server: config.server,
+            port: config.port,
             eauth: "auto",
         }
-        let state = {}
-        auth.mutations.sessionUpdate(state, ex_auth)
-        expect(localStorageMock.setItem).toHaveBeenCalledWith('auth', JSON.stringify(state))
+        auth.mutations.commitAuthToStorage(ex_auth)
+        expect(localStorageMock.setItem).toHaveBeenCalledWith('auth', JSON.stringify(ex_auth))
     })
     it('clears authentication information when sessionClear function is called', () => {
         let state = {

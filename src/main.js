@@ -58,9 +58,9 @@ router.beforeEach((to, from ,next) => {
     next() 
   }
   if(auth.state.authorized === true){ next() }
-  else {
-    next('login') 
-  }
+  else { next('login') }
+
+
 })
 
 window.onbeforeunload = function() {

@@ -10,7 +10,7 @@ export const auth = {
         expire: null,
         perms: null,
         username: 'user',
-        server: "salt.sfb.osaa.net",
+        server: "salt",
         port: "8000",
         eauth: "auto",
     },
@@ -25,7 +25,6 @@ export const auth = {
             state.token = data.token
             state.expire = data.expire
             state.perms = data.perms
-            localStorage.setItem('auth', JSON.stringify(state))
         },
         sessionClear (state) {
             state.connected = state.authorized = state.token = state.expire = state.perms = null
@@ -41,13 +40,8 @@ export const auth = {
             clearInterval(state.interval)
             state.interval = int
         },
-        loadAuthFromStorage (state,local) {
-            state.connected = local.connected
-            state.authorized = local.authorized
-            state.username = local.username
-            state.token = local.token
-            state.expire = local.expire
-            state.perms = local.perms
+        commitAuthToStorage (state) {
+            localStorage.setItem('auth', JSON.stringify(state))
         }
     },
     actions: {
@@ -80,15 +74,38 @@ export const auth = {
             return axios.get('https://' + data.server + 
                             ':' + data.port + '/')
         },
-        checkAuthfromStorage(context) {
-            let local = JSON.parse(localStorage.getItem('auth'))
-            if(!local){return false}
-            let tokentime = Math.floor(local.expire)
-            let now = Math.floor(Date.now()/1000)
-            console.debug(local)
-            if(now > tokentime){console.debug('Token out of date'); router.push('login')}
-            if(!local.authorized){console.debug('Not authorized data'); router.push('login')}
-            context.commit('loadAuthFromStorage', local)
+        loadAuthFromStorage(context) {
+
+            let dataFromStorage
+
+            function validExpiration (timestamp) {
+                let now = Math.floor(Date.now()/1000)
+                timestamp = Math.floor(timestamp)
+                if(now >= timestamp){ 
+                    console.debug('Token out of date')
+                    return false
+                }
+                else {
+                    return true
+                }
+            }
+
+            try {
+                if(!localStorage.hasOwnProperty('auth')){ return false }
+                dataFromStorage = JSON.parse(localStorage.getItem('auth'))
+                if(dataFromStorage.authorized !== true){ return false}
+            }
+            catch(e){
+                console.debug(e)
+                return false
+            }            
+
+            if(validExpiration(dataFromStorage.expire)){
+                context.commit('sessionUpdate', dataFromStorage)
+                router.push('minions')
+            }
+
+
         },
         logout (context){
             context.commit('sessionClear')
