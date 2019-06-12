@@ -42,9 +42,6 @@ import axios from 'axios'
 export default {
     name: 'login',
     created(){
-        if(this.auth.authorized){
-            this.$router.push('minions')
-        }
         if(window.AUTH_CONFIG){
             this.server = AUTH_CONFIG.server
             this.port = AUTH_CONFIG.port
@@ -116,6 +113,7 @@ export default {
                         expire: data.expire,
                         perms: data.perms
                     })
+                    this.$store.commit('commitAuthToStorage')
                     this.$store.dispatch('serverHeartBeat')
                     this.$router.push('minions')
                 }

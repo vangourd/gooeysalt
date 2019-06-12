@@ -26,11 +26,6 @@ export default {
         return {
             salt: this.$root.salt
         }
-    },
-    created(){
-        if (this.salt && this.salt.auth.status === false){
-            this.$router.push({'path':'/login'})
-        }
     }
 }
 

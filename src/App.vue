@@ -5,6 +5,9 @@
 <script>
 export default { 
   name: 'app',
+  created() {
+    this.$store.dispatch('loadAuthFromStorage')
+  },
   updated() {
     if(this.auth.authorized){
       if(this.$store.getters.minions_length === 0){ this.$store.dispatch('loadMinions') }
@@ -12,9 +15,6 @@ export default {
         this.$store.dispatch('getJobsIn5Minutes')
         this.$store.dispatch('getActiveJobs')
       }
-    }
-    if(!this.auth.authorized){
-      this.$store.dispatch('checkAuthfromStorage')
     }
   },
   computed: {

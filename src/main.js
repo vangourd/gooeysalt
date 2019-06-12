@@ -7,7 +7,6 @@ import Minions from './Minions.vue'
 import Jobs from './Jobs.vue'
 import States from './States.vue'
 import Login from './Login.vue'
-import Logout from './Logout.vue'
 import { auth, jobs, minions, statefiles } from './store'
 import AUTH_CONFIG from './config.json'
 
@@ -34,10 +33,6 @@ const routes = [{
   name: 'login',
   component: Login
 }, {
-  path:'/logout',
-  name: 'logout',
-  component: Logout
-}, {
   path: '/minions/:minion?',
   name: 'minions',
   component: Minions,
@@ -58,8 +53,18 @@ const router = new VueRouter({
   routes
 });
 
+router.beforeEach((to, from ,next) => {
+  if(to.name === 'login'){ 
+    next() 
+  }
+  if(auth.state.authorized === true){ next() }
+  else { next('login') }
+
+
+})
+
 window.onbeforeunload = function() {
-  if(auth.status === true){
+  if(auth.state.authorized === true){
     localStorage.setItem('auth',JSON.stringify(auth.export()))
   }
 }
@@ -76,12 +81,6 @@ new Vue({
   router,
   store,
   render: h => h(App),
-  created() {
-    if (!this.$store.state.auth.status){
-        this.$router.push({'path':'/minions'})
-    }
-    this.$router.push({'path':'/login'})
-  },
 })
 
 export { router };

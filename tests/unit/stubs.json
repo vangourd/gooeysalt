@@ -1,0 +1,12 @@
+{
+  "b-container": true,
+  "b-btn": true,
+  "b-navbar":true,
+  "b-row": true,
+  "b-navbar-toggle": true,
+  "b-navbar-brand": true,
+  "b-col": true,
+  "b-form-group": true,
+  "b-input": true,
+  "b-form-select": true
+}
