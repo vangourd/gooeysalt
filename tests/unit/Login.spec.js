@@ -76,7 +76,7 @@ describe('Login.vue', () => {
     expect(el.text()).toBe("Login")
   })
 
-  it('redirects if you are authenticated', () => {
+  it('redirects if you are authenticated', async () => {
 
     let good_auth = {...ex_auth}
     good_auth.authorized = true
@@ -98,10 +98,11 @@ describe('Login.vue', () => {
       },
     })
 
+    await flushPromises()
     expect(wrapper.vm.$router.push).toBeCalledWith('minions')
   })
 
-  it('it does not redirect if you are unauthenticated', () => {
+  it('it does not redirect if you are unauthenticated', async () => {
 
     let bad_auth = {...ex_auth}
     bad_auth.authorized = false
@@ -123,7 +124,7 @@ describe('Login.vue', () => {
       },
     })
 
-
+    await flushPromises()
     expect(wrapper.vm.$router.push).not.toBeCalledWith('minions')
   })
 
