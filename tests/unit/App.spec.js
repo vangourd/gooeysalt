@@ -9,7 +9,7 @@ describe('App.vue', () => {
     it('tries to load cached auth from localStorage', () => {
         let state = {
             auth: {
-                authorized: true,
+                authorized: false,
             }
         }
 

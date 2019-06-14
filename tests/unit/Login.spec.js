@@ -4,6 +4,7 @@ import { shallowMount, mount, createLocalVue } from '@vue/test-utils'
 import flushPromises from 'flush-promises'
 import Login from '../../src/Login.vue'
 import stubs from './stubs.json'
+import AUTH_CONFIG from '../../src/config.json'
 import axios from 'axios'
 
 const localVue = createLocalVue()
@@ -86,7 +87,7 @@ describe('Login.vue', () => {
     })
     const btn = wrapper.find({ ref: 'ping'})
     btn.trigger('click')
-    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":"8000", "server": "salt"})
+    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":AUTH_CONFIG.port, "server": AUTH_CONFIG.server})
     await flushPromises()
     expect(wrapper.vm.ping.variant).toBe("danger")
     expect(wrapper.vm.ping.text).toBe("Failed")
@@ -114,7 +115,7 @@ describe('Login.vue', () => {
     })
     const btn = wrapper.find({ ref: 'ping'})
     btn.trigger('click')
-    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":"8000", "server": "salt"})
+    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":AUTH_CONFIG.port, "server": AUTH_CONFIG.server})
     await flushPromises()
     expect(wrapper.vm.ping.variant).toBe("success")
     expect(wrapper.vm.ping.text).toBe("Success")
@@ -196,51 +197,6 @@ describe('Login.vue', () => {
       expire: mockAuthInfo.data.return[0].expire,
       perms: mockAuthInfo.data.return[0].perms
     })
-  })
-  it('loads customized default login details from config.json when present', () => {
-    let localAuth = {...ex_auth}
-    window.AUTH_CONFIG = (() => {
-      return {
-        server: 'server',
-        port: 'port',
-        eauth: 'eauth'
-      }
-    })()
-    let wrapper = mount(Login, {
-      localVue,
-      mocks: {
-        $store: {
-          state: {
-            auth: localAuth
-          }
-      }
-    }
-    })
-    expect(wrapper.vm.server).toEqual('server')
-    expect(wrapper.vm.port).toEqual('port')
-    expect(wrapper.vm.eauth).toEqual('eauth')
-    //expect fields to be populated
-  })
-  it('if config.json not available default connection settings chosen', () => {
-    let localAuth = {...ex_auth}
-    
-    window.AUTH_CONFIG = undefined
-
-    let wrapper = mount(Login, {
-      localVue,
-      mocks: {
-        $store: {
-          state: {
-            auth: localAuth
-          }
-      }
-    }
-    })
-
-    expect(wrapper.vm.server).toEqual('salt')
-    expect(wrapper.vm.port).toEqual('8000')
-    expect(wrapper.vm.eauth).toEqual('auto')
-    //expect fields to be populated
   })
 
 })

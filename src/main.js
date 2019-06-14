@@ -61,13 +61,11 @@ router.beforeEach((to, from ,next) => {
 
 })
 
-if(AUTH_CONFIG){
-  auth.mutations.applyConfig(auth.state,{
-    server: AUTH_CONFIG.server,
-    port: AUTH_CONFIG.port,
-    eauth: AUTH_CONFIG.eauth 
-  })
-}
+auth.mutations.applyConfig(auth.state,{
+  server: AUTH_CONFIG.server,
+  port: AUTH_CONFIG.port,
+  eauth: AUTH_CONFIG.eauth 
+})
           
 new Vue({
   el: '#app',
