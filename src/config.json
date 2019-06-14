@@ -1,0 +1,5 @@
+{
+    "server": "salt",
+    "port": "8000",
+    "eauth": "auto"
+}
