@@ -37,9 +37,9 @@ const ex_auth = {
   expire: null,
   perms: null,
   username: 'user',
-  server: "salt.sfb.osaa.net",
-  port: "8000",
-  eauth: "auto",
+  server: AUTH_CONFIG.server,
+  port: AUTH_CONFIG.port,
+  eauth: AUTH_CONFIG.eauth,
 }
 
 describe('Login.vue', () => {
@@ -87,7 +87,7 @@ describe('Login.vue', () => {
     })
     const btn = wrapper.find({ ref: 'ping'})
     btn.trigger('click')
-    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":AUTH_CONFIG.port, "server": AUTH_CONFIG.server})
+    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":ex_auth.port, "server": ex_auth.server})
     await flushPromises()
     expect(wrapper.vm.ping.variant).toBe("danger")
     expect(wrapper.vm.ping.text).toBe("Failed")
@@ -115,7 +115,7 @@ describe('Login.vue', () => {
     })
     const btn = wrapper.find({ ref: 'ping'})
     btn.trigger('click')
-    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":AUTH_CONFIG.port, "server": AUTH_CONFIG.server})
+    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('serverPing', {"port":ex_auth.port, "server": ex_auth.server})
     await flushPromises()
     expect(wrapper.vm.ping.variant).toBe("success")
     expect(wrapper.vm.ping.text).toBe("Success")
